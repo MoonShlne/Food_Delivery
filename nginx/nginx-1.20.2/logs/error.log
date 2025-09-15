@@ -9,3 +9,4 @@
 2025/09/14 23:06:17 [emerg] 16168#29288: CreateDirectory() "D:\porjects\Food_Delivery\Food_Delivery\nginx\nginx-1.20.2/temp/client_body_temp" failed (3: The system cannot find the path specified)
 2025/09/14 23:07:04 [emerg] 31876#29712: CreateDirectory() "D:\porjects\Food_Delivery\Food_Delivery\nginx\nginx-1.20.2/temp/client_body_temp" failed (3: The system cannot find the path specified)
 2025/09/14 23:15:58 [emerg] 36640#19240: CreateDirectory() "D:\porjects\Food_Delivery\Food_Delivery\nginx\nginx-1.20.2/temp/client_body_temp" failed (3: The system cannot find the path specified)
+2025/09/14 23:27:12 [error] 3944#35520: *5 connect() failed (10061: No connection could be made because the target machine actively refused it) while connecting to upstream, client: 172.18.86.201, server: localhost, request: "POST /api/employee/login HTTP/1.1", upstream: "http://127.0.0.1:8080/admin/employee/login", host: "172.18.86.201", referrer: "http://172.18.86.201/"
