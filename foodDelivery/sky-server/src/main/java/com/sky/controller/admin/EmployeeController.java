@@ -92,4 +92,13 @@ public class EmployeeController {
         return Result.success(pageResult);
     }
 
+    @PostMapping("status/{status}")
+    @ApiOperation(value = "员工状态修改  启动/禁用")
+    public Result StatusSwitch(@PathVariable Integer status, Long id) {
+        log.info("修改员工状态：{},{}", status, id);
+        employeeService.statusSwitch(status, id);
+
+        return Result.success();
+    }
+
 }

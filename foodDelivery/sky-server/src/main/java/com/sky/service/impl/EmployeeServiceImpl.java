@@ -1,6 +1,7 @@
 package com.sky.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
@@ -58,7 +59,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
 
         //密码比对
-        // TODO 后期需要进行md5加密，然后再进行比对
+        //
         String encPassword = DigestUtils.md5DigestAsHex(password.getBytes());
         if (!encPassword.equals(employee.getPassword())) {
             //密码错误
@@ -113,6 +114,28 @@ public class EmployeeServiceImpl implements EmployeeService {
         Page<Employee> page = employeeMapper.pageQuery(employeePage, employeePageQueryDTO.getName());
 
         return new PageResult(page.getTotal(), page.getRecords());
+    }
+
+    /**
+     * 员工状态修改
+     *
+     * @param status
+     * @param id
+     */
+    @Override
+    public void statusSwitch(Integer status, Long id) {
+//        //使用wrapper
+//        LambdaUpdateWrapper<Employee> wrapper = new LambdaUpdateWrapper<>();
+//        wrapper.set(Employee::getStatus, status).eq(Employee::getId, id);
+//        employeeMapper.update(null, wrapper);
+
+//        方法2  使用自带的update方法
+        Employee employee = new Employee();
+        employee.setId(id);
+        employee.setStatus(status);
+        employeeMapper.updateById(employee);
+
+
     }
 
 }
