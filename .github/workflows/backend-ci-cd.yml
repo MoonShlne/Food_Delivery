@@ -3,12 +3,12 @@ name: Deploy Sky Take-Out Backend
 on:
   push:
     branches: [ "main" ]
-    paths:
-      # 路径已根据您的仓库结构确认
-      - 'sky-server/**'
-      - 'sky-pojo/**'
-      - 'sky-common/**'
-      - 'pom.xml'
+    # paths:
+    #   # 路径已根据您的仓库结构确认
+    #   - 'sky-server/**'
+    #   - 'sky-pojo/**'
+    #   - 'sky-common/**'
+    #   - 'pom.xml'
 
 jobs:
   build-and-deploy:
