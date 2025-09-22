@@ -4,40 +4,31 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      # 为了简化测试，我们暂时只监控 pom.xml
-      # 这样您只需要修改 pom.xml 文件就能确保触发
-      - 'pom.xml' 
-      - 'sky-server/**'
+      # 修正：所有路径都必须从根目录开始，并包含 foodDelivery/
+      - 'foodDelivery/sky-server/**'
+      - 'foodDelivery/sky-pojo/**'
+      - 'foodDelivery/sky-common/**'
+      - 'foodDelivery/pom.xml'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    # 关键改动：为整个 job 设置默认工作目录
-    defaults:
-      run:
-        working-directory: ./ # 明确指定工作目录为项目根目录
-
     steps:
-      # 1. 拉取代码
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. 设置 Java 环境
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: maven
 
-      # 3. 使用 Maven 打包
       - name: Build with Maven
-        # 我们在这里也明确指定一下工作目录，双重保险
-        working-directory: ./
-        # 命令恢复到最简单的形式
-        run: mvn -B package -DskipTests
+        # 修正：明确告诉 Maven pom.xml 文件的位置
+        run: mvn -B package -f foodDelivery/pom.xml -DskipTests
 
-      # 4. 部署到服务器
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
@@ -51,5 +42,6 @@ jobs:
               kill -9 $PID
             fi
             rm -f /project/sky-take-out/jar/sky-server.jar
-            mv ${{ github.workspace }}/sky-server/target/*.jar /project/sky-take-out/jar/sky-server.jar
+            # 修正：构建产物的路径也需要包含 foodDelivery/
+            mv ${{ github.workspace }}/foodDelivery/sky-server/target/*.jar /project/sky-take-out/jar/sky-server.jar
             nohup java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod &
