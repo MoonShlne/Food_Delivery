@@ -56,7 +56,6 @@ public class CategoryController {
 
 @DeleteMapping
 @ApiOperation(value = "删除分类")
-//todo  判断改分类下面有没有菜品或者套餐
     public Result delete(Long id) {
         log.info("删除分类:{}", id);
         categoryService.delete(id);
