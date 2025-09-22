@@ -4,14 +4,19 @@ on:
   push:
     branches: [ "main" ]
     paths:
+      # 为了简化测试，我们暂时只监控 pom.xml
+      # 这样您只需要修改 pom.xml 文件就能确保触发
+      - 'pom.xml' 
       - 'sky-server/**'
-      - 'sky-pojo/**'
-      - 'sky-common/**'
-      - 'pom.xml'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
+    # 关键改动：为整个 job 设置默认工作目录
+    defaults:
+      run:
+        working-directory: ./ # 明确指定工作目录为项目根目录
 
     steps:
       # 1. 拉取代码
@@ -25,9 +30,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. 使用 Maven 打包 (修正部分)
+      # 3. 使用 Maven 打包
       - name: Build with Maven
-        # 修正：去掉了 --file pom.xml 参数，让 Maven 自动查找
+        # 我们在这里也明确指定一下工作目录，双重保险
+        working-directory: ./
+        # 命令恢复到最简单的形式
         run: mvn -B package -DskipTests
 
       # 4. 部署到服务器
