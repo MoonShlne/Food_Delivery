@@ -3,30 +3,34 @@ name: Deploy Sky Take-Out Backend
 on:
   push:
     branches: [ "main" ]
-    # paths:
-    #   # 路径已根据您的仓库结构确认
-    #   - 'sky-server/**'
-    #   - 'sky-pojo/**'
-    #   - 'sky-common/**'
-    #   - 'pom.xml'
+    paths:
+      - 'sky-server/**'
+      - 'sky-pojo/**'
+      - 'sky-common/**'
+      - 'pom.xml'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. 拉取代码
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. 设置 Java 环境
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
+      # 3. 使用 Maven 打包 (修正部分)
       - name: Build with Maven
-        run: mvn -B package --file pom.xml -DskipTests
+        # 修正：去掉了 --file pom.xml 参数，让 Maven 自动查找
+        run: mvn -B package -DskipTests
 
+      # 4. 部署到服务器
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
@@ -34,22 +38,11 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # 确保目标目录存在
             mkdir -p /project/sky-take-out/jar
-
-            # 停止当前正在运行的 Java 程序
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
               kill -9 $PID
             fi
-            
-            # 删除旧的 jar 包
             rm -f /project/sky-take-out/jar/sky-server.jar
-
-            # 从构建产物中找到正确的 jar 文件并移动到部署目录
-            # 注意: 您的 pom 文件可能会生成 sky-server-1.0-SNAPSHOT.jar 这样的文件名
-            # 使用通配符 * 来匹配，确保能找到
             mv ${{ github.workspace }}/sky-server/target/*.jar /project/sky-take-out/jar/sky-server.jar
-
-            # 以后台不挂断的方式启动新的 Java 程序
             nohup java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod &
