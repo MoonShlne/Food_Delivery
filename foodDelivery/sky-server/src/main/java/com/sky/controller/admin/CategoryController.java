@@ -78,6 +78,6 @@ public class CategoryController {
      Result<List<Category>> result= categoryService.getByType(type);
      return result;
 
-//测试ci
+//测试ci1
     }
 }
