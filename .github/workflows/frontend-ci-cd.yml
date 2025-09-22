@@ -4,8 +4,8 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      # 路径已根据您的仓库结构确认
-      - 'sky-take-out-vue/**'
+      # 修正：路径包含 foodDelivery/
+      - 'foodDelivery/sky-take-out-vue/**'
 
 jobs:
   build-and-deploy:
@@ -19,17 +19,18 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          # 重要：指定缓存依赖的路径，提高后续构建速度
           cache: 'npm'
-          cache-dependency-path: sky-take-out-vue/package-lock.json
+          cache-dependency-path: foodDelivery/sky-take-out-vue/package-lock.json
 
       - name: Install dependencies
-        # 重要：必须先进入前端项目目录
-        run: cd sky-take-out-vue && npm install
+        # 修正：明确指定工作目录
+        run: npm install
+        working-directory: ./foodDelivery/sky-take-out-vue
 
       - name: Build project
-        # 重要：必须先进入前端项目目录
-        run: cd sky-take-out-vue && npm run build
+        # 修正：明确指定工作目录
+        run: npm run build
+        working-directory: ./foodDelivery/sky-take-out-vue
 
       - name: Deploy to server
         uses: appleboy/scp-action@master
@@ -37,8 +38,6 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          # 重要：source 路径必须精确到构建出的 dist 目录
-          source: "sky-take-out-vue/dist/*"
-          # target 路径是我们之前确定的服务器路径
+          # 修正：源路径包含 foodDelivery/
+          source: "foodDelivery/sky-take-out-vue/dist/*"
           target: "/project/sky-take-out/dist"
-          strip_components: 2 # 修正 scp 路径问题
