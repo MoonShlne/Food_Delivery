@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      # 路径已确认为您仓库中的真实前端文件夹名
       - 'project-rjwm-admin-vue-ts/**'
 
 jobs:
@@ -18,14 +17,15 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
+          # 保持 Node.js 18，但如果还失败可以尝试降级到 16
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: project-rjwm-admin-vue-ts/package-lock.json
 
-      # --- 这是最终的、唯一的修正 ---
+      # --- 这是关键的修正 ---
       - name: Install dependencies with legacy peer deps
-        # 使用 --legacy-peer-deps 参数来解决依赖冲突问题
-        run: npm install --force
+        # 使用 --legacy-peer-deps 来解决依赖冲突，而不是 --force
+        run: npm install --legacy-peer-deps
         working-directory: ./project-rjwm-admin-vue-ts
 
       - name: Build project
@@ -38,5 +38,6 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          # 确保源路径正确，这里看起来没问题
           source: "project-rjwm-admin-vue-ts/dist/*"
           target: "/project-sky-take-out/dist"
