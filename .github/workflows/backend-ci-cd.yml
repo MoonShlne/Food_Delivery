@@ -39,11 +39,22 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            # 确保部署目录存在
             mkdir -p /project/sky-take-out/jar
+
+            # 停止当前正在运行的旧版本 Java 程序
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
               kill -9 $PID
             fi
+            
+            # 删除旧的 jar 包
             rm -f /project/sky-take-out/jar/sky-server.jar
+
+            # 将在 Actions 虚拟机上构建好的新 jar 包移动到服务器的部署目录
+            # 修正了之前日志中出现的路径重复问题
             mv ${{ github.workspace }}/foodDelivery/sky-server/target/*.jar /project/sky-take-out/jar/sky-server.jar
-            nohup java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod &
+
+            # 以后台不挂断的方式启动新版本的 Java 程序
+            # 修正：使用了 java 的绝对路径
+            nohup /www/server/java/jdk-21.0.2/bin/java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod &
