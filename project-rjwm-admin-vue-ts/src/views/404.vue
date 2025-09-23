@@ -69,7 +69,6 @@ export default class extends Vue {
   left: 50%;
 }
 
-
 .wscn-http404 {
   position: relative;
   width: 1200px;
