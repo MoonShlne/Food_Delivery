@@ -1,4 +1,4 @@
-name: Deploy Sky Take-Out Backend
+name: Deploy Sky Take-out Backend
 
 on:
   push:
@@ -24,42 +24,39 @@ jobs:
       - name: Build with Maven
         run: mvn -B package -f foodDelivery/pom.xml -DskipTests
 
-      # 修正第一步：将构建好的 JAR 文件复制并重命名到工作区根目录
-      # 这样可以简化 scp 的源路径，避免在服务器上创建多余的目录
       - name: Prepare Artifact for Deployment
         run: cp foodDelivery/sky-server/target/*.jar ./sky-server.jar
 
-      # 修正第二步：更新 scp-action 的 source 路径
       - name: Copy JAR to Server
-        # 建议：为了工作流的稳定性，最好将 @master 替换为具体的版本号，例如 @v0.1.7
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          # 源文件现在是工作区的根目录下的 sky-server.jar
           source: "sky-server.jar"
-          # 目标路径保持不变
           target: "/project/sky-take-out/jar"
-          # 由于上一步已经复制并重命名，这里的 rename 参数可以省略
-          # 但为了清晰起见，保留也可以
           rename: "sky-server.jar"
-          # 增加 overwrite 选项确保每次都覆盖旧文件
           overwrite: true
 
-      # 远程部署脚本无需改动
-      - name: Restart Service on Server
+      # --- 这是最终的、唯一的修正 ---
+      - name: Create Production Config and Restart Service
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # 脚本现在可以正确地在 /project/sky-take-out/jar/sky-server.jar 路径找到文件
+            # 1. 【核心步骤】使用 Secret 的内容，在服务器上创建或覆盖 application-prod.yml 文件
+            # Spring Boot 会自动加载与 .jar 文件位于同一目录下的这个配置文件
+            echo "${{ secrets.APPLICATION_PROD_YML }}" > /project/sky-take-out/jar/application-prod.yml
+
+            # 2. 停止旧服务
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
               kill -9 $PID
             fi
             
-            # 以后台不挂断的方式启动新版本的 Java 程序
-            nohup /www/server/java/jdk-21.0.2/bin/java  -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
+            # 3. 启动新服务，并激活 prod 环境
+            # 它会自动读取我们刚刚创建的 application-prod.yml
+            # 使用您之前找到的、正确的 Java 绝对路径
+            nohup /www/server/java/jdk-21.0.2/bin/java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
