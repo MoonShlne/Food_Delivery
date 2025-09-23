@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      # 路径已更新为您仓库中的真实前端文件夹名
+      # 路径已确认为您仓库中的真实前端文件夹名
       - 'project-rjwm-admin-vue-ts/**'
 
 jobs:
@@ -12,36 +12,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 拉取代码
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. 设置 Node.js 环境
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
-          # 缓存依赖路径也已更新
           cache-dependency-path: project-rjwm-admin-vue-ts/package-lock.json
 
-      # 3. 安装依赖 (使用 npm ci 更适合自动化环境)
-      - name: Install dependencies
-        run: npm ci
+      # --- 这是最终的、唯一的修正 ---
+      - name: Install dependencies with legacy peer deps
+        # 使用 --legacy-peer-deps 参数来解决依赖冲突问题
+        run: npm install --legacy-peer-deps
         working-directory: ./project-rjwm-admin-vue-ts
 
-      # 4. 构建项目
       - name: Build project
         run: npm run build
         working-directory: ./project-rjwm-admin-vue-ts
 
-      # 5. 部署到服务器
       - name: Deploy to server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          # 源路径已更新为正确的构建产物目录
           source: "project-rjwm-admin-vue-ts/dist/*"
-          target: "/project/sky-take-out/dist"
+          target: "/project-sky-take-out/dist"
