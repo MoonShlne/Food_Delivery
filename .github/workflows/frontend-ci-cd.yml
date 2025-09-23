@@ -14,18 +14,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Use Node.js
+      # --- 修正 1: 将 Node.js 版本降级到 16 ---
+      - name: Use Node.js 16
         uses: actions/setup-node@v3
         with:
-          # 保持 Node.js 18，但如果还失败可以尝试降级到 16
-          node-version: '18'
+          node-version: '16'
           cache: 'npm'
           cache-dependency-path: project-rjwm-admin-vue-ts/package-lock.json
 
-      # --- 这是关键的修正 ---
-      - name: Install dependencies with legacy peer deps
-        # 使用 --legacy-peer-deps 来解决依赖冲突，而不是 --force
-        run: npm install --legacy-peer-deps
+      # --- 修正 2: 在安装前删除旧的锁文件，强制重新解析依赖 ---
+      - name: Remove package-lock.json
+        run: rm -f package-lock.json
+        working-directory: ./project-rjwm-admin-vue-ts
+
+      # --- 修正 3: 使用标准的 npm install 命令 ---
+      # 在 Node.js 16 和没有锁文件的情况下，通常不再需要特殊参数
+      - name: Install dependencies
+        run: npm install
         working-directory: ./project-rjwm-admin-vue-ts
 
       - name: Build project
@@ -38,6 +43,5 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          # 确保源路径正确，这里看起来没问题
           source: "project-rjwm-admin-vue-ts/dist/*"
           target: "/project-sky-take-out/dist"
