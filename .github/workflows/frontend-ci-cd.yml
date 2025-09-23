@@ -25,7 +25,7 @@ jobs:
       # --- 这是最终的、唯一的修正 ---
       - name: Install dependencies with legacy peer deps
         # 使用 --legacy-peer-deps 参数来解决依赖冲突问题
-        run: npm install --legacy-peer-deps
+        run: npm install --force
         working-directory: ./project-rjwm-admin-vue-ts
 
       - name: Build project
