@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      # 修正：所有路径都必须从根目录开始，并包含 foodDelivery/
       - 'foodDelivery/sky-server/**'
       - 'foodDelivery/sky-pojo/**'
       - 'foodDelivery/sky-common/**'
@@ -26,8 +25,12 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        # 修正：明确告诉 Maven pom.xml 文件的位置
         run: mvn -B package -f foodDelivery/pom.xml -DskipTests
+
+      # --- 这是我们新增的“侦察”步骤 ---
+      - name: Verify build artifacts
+        run: ls -l foodDelivery/sky-server/target/
+      # ------------------------------------
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
@@ -36,35 +39,11 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            echo "--- Starting Deployment ---"
-            echo "Current user is: $(whoami)"
-            echo "Current directory is: $(pwd)"
-
-            # 创建目录并验证
-            echo "--- Creating directory ---"
             mkdir -p /project/sky-take-out/jar
-            echo "Listing contents of /project/sky-take-out/:"
-            ls -l /project/sky-take-out/
-
-            # 停止当前正在运行的 Java 程序
-            echo "--- Stopping old process ---"
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
-              echo "Found running process with PID: $PID. Killing it."
               kill -9 $PID
-            else
-              echo "No running process found."
             fi
-
-            # 删除旧的 jar 包
-            echo "--- Removing old jar file ---"
             rm -f /project/sky-take-out/jar/sky-server.jar
-            
-            # 复制新的 jar 包到部署目录
-            echo "--- Moving new jar file ---"
             mv ${{ github.workspace }}/foodDelivery/sky-server/target/*.jar /project/sky-take-out/jar/sky-server.jar
-            
-            # 启动新程序
-            echo "--- Starting new process ---"
             nohup java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod &
-            echo "--- Deployment Finished ---"
