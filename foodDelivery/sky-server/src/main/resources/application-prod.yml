@@ -1,6 +1,7 @@
 server:
   port: 8088
 
+
 sky:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

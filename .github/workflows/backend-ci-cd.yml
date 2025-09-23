@@ -62,4 +62,4 @@ jobs:
             fi
             
             # 以后台不挂断的方式启动新版本的 Java 程序
-            nohup /www/server/java/jdk-21.0.2/bin/java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod &
+            nohup /www/server/java/jdk-21.0.2/bin/java  -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
