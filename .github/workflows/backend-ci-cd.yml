@@ -1,4 +1,70 @@
-name: Deploy Sky Take-Out Backend
+# name: Deploy Sky Take-Out Backend
+
+# on:
+#   push:
+#     branches: [ "main" ]
+#     paths:
+#       - 'foodDelivery/**'
+
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Set up JDK 17
+#         uses: actions/setup-java@v3
+#         with:
+#           java-version: '17'
+#           distribution: 'temurin'
+#           cache: maven
+
+#       - name: Build with Maven
+#         run: mvn -B package -f foodDelivery/pom.xml -DskipTests
+
+#       # 修正第一步：将构建好的 JAR 文件复制并重命名到工作区根目录
+#       # 这样可以简化 scp 的源路径，避免在服务器上创建多余的目录
+#       - name: Prepare Artifact for Deployment
+#         run: cp foodDelivery/sky-server/target/*.jar ./sky-server.jar
+
+#       # 修正第二步：更新 scp-action 的 source 路径
+#       - name: Copy JAR to Server
+#         # 建议：为了工作流的稳定性，最好将 @master 替换为具体的版本号，例如 @v0.1.7
+#         uses: appleboy/scp-action@master
+#         with:
+#           host: ${{ secrets.SERVER_HOST }}
+#           username: ${{ secrets.SERVER_USERNAME }}
+#           key: ${{ secrets.SERVER_SSH_KEY }}
+#           # 源文件现在是工作区的根目录下的 sky-server.jar
+#           source: "sky-server.jar"
+#           # 目标路径保持不变
+#           target: "/project/sky-take-out/jar"
+#           # 由于上一步已经复制并重命名，这里的 rename 参数可以省略
+#           # 但为了清晰起见，保留也可以
+#           rename: "sky-server.jar"
+#           # 增加 overwrite 选项确保每次都覆盖旧文件
+#           overwrite: true
+
+#       # 远程部署脚本无需改动
+#       - name: Restart Service on Server
+#         uses: appleboy/ssh-action@master
+#         with:
+#           host: ${{ secrets.SERVER_HOST }}
+#           username: ${{ secrets.SERVER_USERNAME }}
+#           key: ${{ secrets.SERVER_SSH_KEY }}
+#           script: |
+#             # 脚本现在可以正确地在 /project/sky-take-out/jar/sky-server.jar 路径找到文件
+#             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
+#             if [ -n "$PID" ]; then
+#               kill -9 $PID
+#             fi
+            
+#             # 以后台不挂断的方式启动新版本的 Java 程序
+#             nohup /www/server/java/jdk-21.0.2/bin/java  -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
+
+name: Deploy Sky Take-out Backend
 
 on:
   push:
@@ -21,33 +87,36 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # --- 核心修正第一步：在【构建前】，直接创建【生产】环境所需的配置文件 ---
+      - name: Create config files for build
+        run: |
+          mkdir -p foodDelivery/sky-server/src/main/resources
+          # 创建主配置文件，并激活 prod 环境
+          cat <<EOF > foodDelivery/sky-server/src/main/resources/application.yml
+          ${{ secrets.APPLICATION_YML }}
+          EOF
+          # 创建生产环境的专属配置文件
+          cat <<EOF > foodDelivery/sky-server/src/main/resources/application-prod.yml
+          ${{ secrets.APPLICATION_PROD_YML }}
+          EOF
+
       - name: Build with Maven
+        # 现在，打包时会使用 prod 配置
         run: mvn -B package -f foodDelivery/pom.xml -DskipTests
 
-      # 修正第一步：将构建好的 JAR 文件复制并重命名到工作区根目录
-      # 这样可以简化 scp 的源路径，避免在服务器上创建多余的目录
-      - name: Prepare Artifact for Deployment
-        run: cp foodDelivery/sky-server/target/*.jar ./sky-server.jar
-
-      # 修正第二步：更新 scp-action 的 source 路径
       - name: Copy JAR to Server
-        # 建议：为了工作流的稳定性，最好将 @master 替换为具体的版本号，例如 @v0.1.7
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          # 源文件现在是工作区的根目录下的 sky-server.jar
-          source: "sky-server.jar"
-          # 目标路径保持不变
+          source: "foodDelivery/sky-server/target/*.jar"
           target: "/project/sky-take-out/jar"
-          # 由于上一步已经复制并重命名，这里的 rename 参数可以省略
-          # 但为了清晰起见，保留也可以
           rename: "sky-server.jar"
-          # 增加 overwrite 选项确保每次都覆盖旧文件
           overwrite: true
 
-      # 远程部署脚本无需改动
+      # --- 第二步：服务器端的操作保持不变 ---
+      # 因为 .jar 包内部已经打包了 prod 配置，所以不再需要在服务器上动态创建
       - name: Restart Service on Server
         uses: appleboy/ssh-action@master
         with:
@@ -55,11 +124,13 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # 脚本现在可以正确地在 /project/sky-take-out/jar/sky-server.jar 路径找到文件
+            # 停止旧服务
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
               kill -9 $PID
             fi
             
-            # 以后台不挂断的方式启动新版本的 Java 程序
-            nohup /www/server/java/jdk-21.0.2/bin/java  -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
+            # 启动新服务，并激活 prod 环境
+            # Spring Boot 会自动加载 .jar 包内部的 application-prod.yml
+            source /etc/profile
+            nohup java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &

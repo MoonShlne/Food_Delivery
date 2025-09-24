@@ -32,6 +32,5 @@ public class DishController {
     public Result save(@RequestBody DishDTO dishDTO) {
         dishService.save(dishDTO);
         return Result.success();
-
     }
 }
