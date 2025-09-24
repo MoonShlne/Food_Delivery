@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sky.annotation.AutoFill;
 import com.sky.constant.MessageConstant;
 import com.sky.constant.PasswordConstant;
 import com.sky.constant.StatusConstant;
@@ -12,6 +13,7 @@ import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.dto.EmployeePageQueryDTO;
 import com.sky.entity.Employee;
+import com.sky.enumeration.OperationType;
 import com.sky.exception.AccountLockedException;
 import com.sky.exception.AccountNotFoundException;
 import com.sky.exception.PasswordErrorException;
@@ -90,14 +92,15 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setStatus(StatusConstant.ENABLE);
         //创建密码
         employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
-        //创建时间
-        employee.setCreateTime(LocalDateTime.now());
-        //更新时间
-        employee.setUpdateTime(LocalDateTime.now());
-        //createUser
-        employee.setCreateUser(BaseContext.getCurrentId());
-        //updateUser
-        employee.setUpdateUser(BaseContext.getCurrentId());
+        //通过mybatis plus 的公共字段填充功能 自动填充
+//        //创建时间
+//        employee.setCreateTime(LocalDateTime.now());
+//        //更新时间
+//        employee.setUpdateTime(LocalDateTime.now());
+//        //createUser
+//        employee.setCreateUser(BaseContext.getCurrentId());
+//        //updateUser
+//        employee.setUpdateUser(BaseContext.getCurrentId());
         //把传来的新角色注册到数据库
         employeeMapper.insert(employee);
     }
@@ -163,8 +166,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     public void update(EmployeeDTO employeeDTO) {
         Employee employee = new Employee();
         BeanUtils.copyProperties(employeeDTO,employee);
-        employee.setUpdateTime(LocalDateTime.now());
-        employee.setUpdateUser(BaseContext.getCurrentId());
 
         employeeMapper.updateById(employee);
 
