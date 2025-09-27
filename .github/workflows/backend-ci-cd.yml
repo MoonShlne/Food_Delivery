@@ -87,7 +87,6 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # --- 这是最终的、唯一的修正 ---
       - name: Create config files for build
         run: |
           mkdir -p foodDelivery/sky-server/src/main/resources
@@ -113,20 +112,14 @@ jobs:
           rename: "sky-server.jar"
           overwrite: true
 
+      # --- 这是最终的、唯一的修正 ---
       - name: Create Production Config and Restart Service
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          env:
-            APPLICATION_PROD_YML: ${{ secrets.APPLICATION_PROD_YML }}
           script: |
-            # 核心修正：给 EOF 加上单引号，防止 Shell 解析变量
-            cat <<'EOF' > /project/sky-take-out/jar/application-prod.yml
-            $APPLICATION_PROD_YML
-            EOF
-
             # 停止旧服务
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
