@@ -87,7 +87,6 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 第 1 步：在【构建前】，创建临时的【开发】配置文件
       - name: Create config files for build
         run: |
           mkdir -p foodDelivery/sky-server/src/main/resources
@@ -98,11 +97,9 @@ jobs:
           ${{ secrets.APPLICATION_DEV_YML }}
           EOF
 
-      # 第 2 步：使用 Maven 打包
       - name: Build with Maven
         run: mvn -B package -f foodDelivery/pom.xml -DskipTests
 
-      # 第 3 步：将构建好的 JAR 文件复制到服务器
       - name: Copy JAR to Server
         uses: appleboy/scp-action@master
         with:
@@ -114,22 +111,28 @@ jobs:
           rename: "sky-server.jar"
           overwrite: true
 
-      # 第 4 步：在【服务器上】，创建【生产】配置文件并重启服务
       - name: Create Production Config and Restart Service
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          # 确保 env: 和 script: 的缩进与 host: 等对齐
           env:
+            # 确保 APPLICATION_PROD_YML: 相对于 env: 有2个空格的缩进
             APPLICATION_PROD_YML: ${{ secrets.APPLICATION_PROD_YML }}
           script: |
+            # 使用 cat 和 Here Document 来创建配置文件，能完美保留格式
             cat <<'EOF' > /project/sky-take-out/jar/application-prod.yml
             $APPLICATION_PROD_YML
             EOF
-            source /etc/profile
+
+            # 停止旧服务
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
               kill -9 $PID
             fi
+            
+            # 加载环境变量并启动新服务
+            source /etc/profile
             nohup java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
