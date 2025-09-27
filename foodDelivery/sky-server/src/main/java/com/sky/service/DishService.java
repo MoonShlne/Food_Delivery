@@ -1,6 +1,9 @@
 package com.sky.service;
 
 import com.sky.dto.DishDTO;
+import com.sky.dto.DishPageQueryDTO;
+import com.sky.result.PageResult;
+import com.sky.result.Result;
 
 /**
  * @author polar
@@ -9,7 +12,14 @@ import com.sky.dto.DishDTO;
  */
 public interface DishService {
     /**
-     * 新增
+     * 新增菜品
      */
     void save(DishDTO dishDTO);
+
+    /**
+     * 分页查询菜品
+     * @param dishPageQueryDTO
+     * @return
+     */
+    Result<PageResult> pageQuery(DishPageQueryDTO dishPageQueryDTO);
 }

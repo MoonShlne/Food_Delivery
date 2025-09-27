@@ -1,11 +1,17 @@
 package com.sky.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.dto.DishDTO;
+import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
 import com.sky.mapper.DishFlavorMapper;
 import com.sky.mapper.DishMapper;
+import com.sky.result.PageResult;
+import com.sky.result.Result;
 import com.sky.service.DishService;
+import com.sky.vo.DishVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -57,6 +63,29 @@ public class DishServiceImpl implements DishService {
                     }
             );
         }
+
+
+    }
+
+    /**
+     * 分页查询菜品
+     *
+     * @param dishPageQueryDTO
+     * @return
+     */
+    @Override
+    public Result<PageResult> pageQuery(DishPageQueryDTO dishPageQueryDTO) {
+        new Page<>(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize());
+        //构造分页查询条件
+        Page<DishVO> dishPage = new Page<>(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize());
+
+        IPage<DishVO> iPage = dishMapper.pageQuery(dishPage, dishPageQueryDTO);
+
+        PageResult pageResult = new PageResult();
+        pageResult.setTotal(iPage.getTotal());
+        pageResult.setRecords(iPage.getRecords());
+
+        return Result.success(pageResult);
 
 
     }
