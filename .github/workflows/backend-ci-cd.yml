@@ -111,20 +111,18 @@ jobs:
           rename: "sky-server.jar"
           overwrite: true
 
+      # --- 这是最终的、唯一的修正 ---
       - name: Create Production Config and Restart Service
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          # 确保 env: 和 script: 的缩进与 host: 等对齐
-          env:
-            # 确保 APPLICATION_PROD_YML: 相对于 env: 有2个空格的缩进
-            APPLICATION_PROD_YML: ${{ secrets.APPLICATION_PROD_YML }}
           script: |
-            # 使用 cat 和 Here Document 来创建配置文件，能完美保留格式
+            # 修正：我们不再使用 env: 参数，而是将 Secret 直接嵌入到 script 中
+            # 这样可以避免任何 YAML 的解析问题
             cat <<'EOF' > /project/sky-take-out/jar/application-prod.yml
-            $APPLICATION_PROD_YML
+            ${{ secrets.APPLICATION_PROD_YML }}
             EOF
 
             # 停止旧服务
