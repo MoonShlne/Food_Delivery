@@ -94,8 +94,8 @@ jobs:
           cat <<'EOF' > foodDelivery/sky-server/src/main/resources/application.yml
           ${{ secrets.APPLICATION_YML }}
           EOF
-          cat <<'EOF' > foodDelivery/sky-server/src/main/resources/application-dev.yml
-          ${{ secrets.APPLICATION_DEV_YML }}
+          cat <<'EOF' > foodDelivery/sky-server/src/main/resources/application-prod.yml
+          ${{ secrets.APPLICATION_PROD_YML }}
           EOF
 
       - name: Build with Maven
@@ -107,25 +107,24 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "foodDelivery/sky-server/target/*.jar"
+          source: "sky-server.jar"
           target: "/project/sky-take-out/jar"
           rename: "sky-server.jar"
           overwrite: true
 
-      # --- 这是最终的、唯一的修正 ---
-      - name: Create Production Config and Restart Service
+      # 远程部署脚本无需改动
+      - name: Restart Service on Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # 停止旧服务
+            # 脚本现在可以正确地在 /project/sky-take-out/jar/sky-server.jar 路径找到文件
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
               kill -9 $PID
             fi
             
-            # 加载环境变量并启动新服务
-            source /etc/profile
-            nohup java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
+            # 以后台不挂断的方式启动新版本的 Java 程序
+            nohup /www/server/java/jdk-21.0.2/bin/java  -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
