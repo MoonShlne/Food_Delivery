@@ -88,13 +88,16 @@ jobs:
           cache: maven
 
       # 第 1 步：在【构建前】，只创建【生产环境】所需的配置文件
-      - name: Create Production config files for build
+      - name: Create config files for build
         run: |
           mkdir -p foodDelivery/sky-server/src/main/resources
-          # 从 Secrets 创建主配置文件 (激活 prod)
-          echo "${{ secrets.APPLICATION_YML }}" > foodDelivery/sky-server/src/main/resources/application.yml
-          # 从 Secrets 创建生产环境的专属配置文件
-          echo "${{ secrets.APPLICATION_PROD_YML }}" > foodDelivery/sky-server/src/main/resources/application-prod.yml
+          # 核心修正：给 EOF 加上单引号，防止 Shell 解析变量
+          cat <<'EOF' > foodDelivery/sky-server/src/main/resources/application.yml
+          ${{ secrets.APPLICATION_YML }}
+          EOF
+          cat <<'EOF' > foodDelivery/sky-server/src/main/resources/application-prod.yml
+          ${{ secrets.APPLICATION_PROD_YML }}
+          EOF
 
       # 第 2 步：使用 Maven 打包
       # 打包时，会将上面两个 yml 文件包含进 .jar 包
