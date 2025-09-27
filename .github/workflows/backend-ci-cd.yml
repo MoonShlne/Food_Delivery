@@ -87,10 +87,15 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 步骤 1: 正常使用 Maven 打包。
-      # JAR 包中只会包含你代码库 src/main/resources 下的默认配置文件（通常是带占位符的）。
+      # 步骤 1: 正常使用 Maven 打包
       - name: Build with Maven
         run: mvn -B package -f foodDelivery/pom.xml -DskipTests
+
+      # [新增] 调试步骤：检查构建产物是否存在
+      - name: Debug: Check for build artifact
+        run: |
+          echo "Listing contents of the target directory to verify JAR existence:"
+          ls -l foodDelivery/sky-server/target/
 
       # 步骤 2: 将构建好的 JAR 文件复制到服务器
       - name: Copy JAR to Server
@@ -104,16 +109,18 @@ jobs:
           rename: "sky-server.jar"
           overwrite: true
 
-      # 步骤 3: 在服务器上根据 Secret 创建或覆盖生产环境的配置文件
-      - name: Create Production Configuration on Server
+      # 步骤 3: 在服务器上根据 Secret 创建或覆盖【两个】配置文件
+      - name: Create Configuration Files on Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # 将 GitHub Secret 的内容写入到服务器上 JAR 包旁边的 application-prod.yml 文件中。
-            # 引号对于保留多行内容的格式至关重要。
+            # 从 Secret 创建基础配置文件 application.yml
+            echo "${{ secrets.APPLICATION_YML }}" > /project/sky-take-out/jar/application.yml
+            
+            # 从 Secret 创建生产环境配置文件 application-prod.yml
             echo "${{ secrets.APPLICATION_PROD_YML }}" > /project/sky-take-out/jar/application-prod.yml
 
       # 步骤 4: 远程重启服务
@@ -130,9 +137,12 @@ jobs:
               kill -9 $PID
             fi
 
-            # 加载环境变量，以防 java 命令不在默认 PATH 中
+            # 加载环境变量
             source /etc/profile
 
-            # 切换到 JAR 包所在目录再执行启动命令，确保相对路径和外部配置加载正确
+            # 切换到 JAR 包所在目录再执行启动命令
             cd /project/sky-take-out/jar
+            # 启动时，Spring Boot 会先加载 application.yml，再加载 application-prod.yml 进行覆盖
             nohup java -jar sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
+
+
