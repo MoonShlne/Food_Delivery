@@ -91,12 +91,6 @@ jobs:
       - name: Build with Maven
         run: mvn -B package -f foodDelivery/pom.xml -DskipTests
 
-      # [新增] 调试步骤：检查构建产物是否存在
-      - name: Debug: Check for build artifact
-        run: |
-          echo "Listing contents of the target directory to verify JAR existence:"
-          ls -l foodDelivery/sky-server/target/
-
       # 步骤 2: 将构建好的 JAR 文件复制到服务器
       - name: Copy JAR to Server
         uses: appleboy/scp-action@master
@@ -144,5 +138,4 @@ jobs:
             cd /project/sky-take-out/jar
             # 启动时，Spring Boot 会先加载 application.yml，再加载 application-prod.yml 进行覆盖
             nohup java -jar sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
-
 
