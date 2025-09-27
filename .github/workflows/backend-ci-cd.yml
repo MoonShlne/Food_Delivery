@@ -87,21 +87,19 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # --- 核心修正第一步：在【构建前】，直接创建【生产】环境所需的配置文件 ---
+      # --- 这是最终的、唯一的修正 ---
       - name: Create config files for build
         run: |
           mkdir -p foodDelivery/sky-server/src/main/resources
-          # 创建主配置文件，并激活 prod 环境
-          cat <<EOF > foodDelivery/sky-server/src/main/resources/application.yml
+          # 核心修正：给 EOF 加上单引号，防止 Shell 解析变量
+          cat <<'EOF' > foodDelivery/sky-server/src/main/resources/application.yml
           ${{ secrets.APPLICATION_YML }}
           EOF
-          # 创建生产环境的专属配置文件
-          cat <<EOF > foodDelivery/sky-server/src/main/resources/application-prod.yml
-          ${{ secrets.APPLICATION_PROD_YML }}
+          cat <<'EOF' > foodDelivery/sky-server/src/main/resources/application-dev.yml
+          ${{ secrets.APPLICATION_DEV_YML }}
           EOF
 
       - name: Build with Maven
-        # 现在，打包时会使用 prod 配置
         run: mvn -B package -f foodDelivery/pom.xml -DskipTests
 
       - name: Copy JAR to Server
@@ -115,22 +113,26 @@ jobs:
           rename: "sky-server.jar"
           overwrite: true
 
-      # --- 第二步：服务器端的操作保持不变 ---
-      # 因为 .jar 包内部已经打包了 prod 配置，所以不再需要在服务器上动态创建
-      - name: Restart Service on Server
+      - name: Create Production Config and Restart Service
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          env:
+            APPLICATION_PROD_YML: ${{ secrets.APPLICATION_PROD_YML }}
           script: |
+            # 核心修正：给 EOF 加上单引号，防止 Shell 解析变量
+            cat <<'EOF' > /project/sky-take-out/jar/application-prod.yml
+            $APPLICATION_PROD_YML
+            EOF
+
             # 停止旧服务
             PID=$(ps -ef | grep 'sky-server.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
               kill -9 $PID
             fi
             
-            # 启动新服务，并激活 prod 环境
-            # Spring Boot 会自动加载 .jar 包内部的 application-prod.yml
+            # 加载环境变量并启动新服务
             source /etc/profile
             nohup java -jar /project/sky-take-out/jar/sky-server.jar --spring.profiles.active=prod > /dev/null 2>&1 &
