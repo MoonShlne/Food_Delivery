@@ -1,19 +1,27 @@
 package com.sky.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sky.constant.MessageConstant;
 import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
+import com.sky.entity.Setmeal;
+import com.sky.entity.SetmealDish;
+import com.sky.exception.DeletionNotAllowedException;
 import com.sky.mapper.DishFlavorMapper;
 import com.sky.mapper.DishMapper;
+import com.sky.mapper.SetMealDishMapper;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.DishService;
 import com.sky.vo.DishVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +39,8 @@ public class DishServiceImpl implements DishService {
 
     @Autowired
     private DishFlavorMapper dishFlavorMapper;
+    @Autowired
+    private SetMealDishMapper setMealDishMapper;
 
     /**
      * 新增菜品功能
@@ -87,6 +97,69 @@ public class DishServiceImpl implements DishService {
 
         return Result.success(pageResult);
 
+
+    }
+
+    /**
+     * 删除/批量删除菜品
+     *
+     * @param ids
+     */
+    @Override
+    @Transactional
+    public void deleteBatch(List<Long> ids) {
+        //参数校验
+        if (ids == null || ids.isEmpty()) {
+            throw new DeletionNotAllowedException("请选择菜品");
+        }
+        //首先在售菜品不得删除
+        LambdaQueryWrapper<Dish> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(Dish::getId, ids);
+        List<Dish> dishes = dishMapper.selectList(wrapper);
+        dishes.forEach(
+                item -> {
+                    if (item.getStatus() == 1) {
+                        throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
+                    }
+                }
+        );
+
+        //被套餐关联的菜品不得删除
+
+
+//        LambdaQueryWrapper<SetmealDish> setMealWrapper = new LambdaQueryWrapper<>();
+//        setMealWrapper.in(SetmealDish::getDishId, ids);
+//        Long count = setMealDishMapper.selectCount(setMealWrapper);
+//
+//        if (count > 0) {
+//            throw  new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
+//        }
+
+
+        //优化  返回关联套餐的菜品名称
+        for (Long id : ids) {
+            LambdaQueryWrapper<SetmealDish> setMealWrapper = new LambdaQueryWrapper<>();
+            setMealWrapper.eq(SetmealDish::getDishId, id);
+            Long count = setMealDishMapper.selectCount(setMealWrapper);
+
+            if (count > 0) {
+                //查询关联了套餐的菜品名称 并且返回
+                Dish dish = dishMapper.selectById(id);
+                throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL + "关联套餐的菜品名称是" + dish.getName());
+            }
+        }
+
+
+        //菜品关联的口味也要删除
+
+        LambdaQueryWrapper<DishFlavor> flavorWrapper = new LambdaQueryWrapper<>();
+        flavorWrapper.in(DishFlavor::getDishId, ids);
+        dishFlavorMapper.delete(flavorWrapper);
+
+        //支持批量删除
+        LambdaQueryWrapper<Dish> dishWrapper = new LambdaQueryWrapper<>();
+        dishWrapper.in(Dish::getId, ids);
+        dishMapper.delete(dishWrapper);
 
     }
 }
