@@ -6,6 +6,9 @@ import com.sky.dto.SetmealPageQueryDTO;
 import com.sky.entity.Setmeal;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
+import com.sky.vo.SetmealVO;
+
+import java.util.List;
 
 /**
  * @author polar
@@ -27,4 +30,29 @@ public interface SetMealService  extends IService<Setmeal> {
      */
     Result<PageResult> pageQuery(SetmealPageQueryDTO setmealPageQueryDTO);
 
+    /**
+     * 套餐状态修改
+     * @param status
+     * @param id
+     */
+    void statusSwitch(Integer status, Long id);
+
+    /**
+     * 根据id查询套餐信息
+     * @param id
+     * @return
+     */
+    SetmealVO getByIdWithDish(Long id);
+
+    /**
+     * 修改套餐信息
+     * @param setmealDTO
+     */
+    void update(SetmealDTO setmealDTO);
+
+    /**
+     * 批量删除套餐
+     * @param ids
+     */
+    void deleteWithDishes(List<Long> ids);
 }
