@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
+import com.sky.result.Result;
 import com.sky.vo.DishVO;
 import org.apache.ibatis.annotations.Param;
 
@@ -15,4 +16,5 @@ import org.apache.ibatis.annotations.Param;
 public interface DishMapper extends BaseMapper<Dish> {
 
     IPage<DishVO> pageQuery(Page<DishVO> dishPage,  DishPageQueryDTO dishPageQueryDTO);
+
 }

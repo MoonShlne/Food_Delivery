@@ -2,6 +2,7 @@ package com.sky.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
@@ -161,5 +162,84 @@ public class DishServiceImpl implements DishService {
         dishWrapper.in(Dish::getId, ids);
         dishMapper.delete(dishWrapper);
 
+    }
+
+    /**
+     * 根据id查询菜品及其口味信息
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public Result<DishVO> getByIdWithFlavor(Long id) {
+
+        DishVO dishVO = new DishVO();
+        //查询菜品基本信息
+        Dish dish = dishMapper.selectById(id);
+        BeanUtils.copyProperties(dish, dishVO);
+
+        //查询口味信息
+        LambdaQueryWrapper<DishFlavor> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DishFlavor::getDishId, id);
+
+        List<DishFlavor> flavors = dishFlavorMapper.selectList(wrapper);
+
+        dishVO.setFlavors(flavors);
+
+        return Result.success(dishVO);
+    }
+
+    /**
+     * 修改菜品
+     *
+     * @param dishDTO
+     */
+    @Transactional
+    @Override
+    public void update(DishDTO dishDTO) {
+        //修改菜品属性
+        Dish dish = new Dish();
+        BeanUtils.copyProperties(dishDTO, dish);
+
+        dishMapper.updateById(dish);
+
+        //修改口味信息 先删除再添加
+        LambdaQueryWrapper<DishFlavor> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DishFlavor::getDishId, dishDTO.getId());
+        dishFlavorMapper.delete(wrapper);
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        if (flavors != null && !flavors.isEmpty()) {
+            flavors.forEach(
+                    flavor -> {
+                        flavor.setDishId(dishDTO.getId());
+                        dishFlavorMapper.insert(flavor);
+                    }
+            );
+        }
+
+
+    }
+
+    /**
+     * 起售/停售菜品
+     *
+     * @param status
+     * @param id
+     */
+    @Override
+    public void statusSwitch(Integer status, Long id) {
+        LambdaUpdateWrapper<Dish> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Dish::getId, id)
+                .set(Dish::getStatus, status);
+        dishMapper.update(null, wrapper);
+    }
+
+    @Override
+    public List<Dish> list(Long id) {
+        LambdaQueryWrapper<Dish> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Dish::getCategoryId, id);
+        List<Dish> dishes = dishMapper.selectList(wrapper);
+
+        return   dishes;
     }
 }
