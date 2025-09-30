@@ -86,7 +86,6 @@ public class DishServiceImpl implements DishService {
      */
     @Override
     public Result<PageResult> pageQuery(DishPageQueryDTO dishPageQueryDTO) {
-        new Page<>(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize());
         //构造分页查询条件
         Page<DishVO> dishPage = new Page<>(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize());
 

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sky.mapper.SetMealMapper">
+
+
+    <select id="pageQuery" resultType="com.sky.vo.SetmealVO">
+        select setmeal.*, category.name as categoryName
+        from setmeal
+        left join category on setmeal.category_id = category.id
+        <where>
+            <if test="dto.name!=null">
+                and setmeal.name like concat('%', #{dto.name}, '%')
+            </if>
+            <if test="dto.status!=null">
+                and setmeal.status = #{dto.status}
+            </if>
+            <if test="dto.categoryId!=null">
+                and setmeal.category_id = #{dto.categoryId}
+            </if>
+        </where>
+        order by setmeal.update_time desc
+
+    </select>
+</mapper>
