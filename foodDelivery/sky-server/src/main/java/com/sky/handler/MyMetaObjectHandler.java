@@ -23,17 +23,28 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         log.info("公共字段自动填充[insert]...");
-        metaObject.setValue("createTime", LocalDateTime.now());
-        metaObject.setValue("updateTime", LocalDateTime.now());
-        metaObject.setValue("createUser", BaseContext.getCurrentId());
-        metaObject.setValue("updateUser", BaseContext.getCurrentId());
-
+        if (metaObject.hasSetter("createTime")) {
+            metaObject.setValue("createTime", LocalDateTime.now());
+        }
+        if (metaObject.hasSetter("updateTime")) {
+            metaObject.setValue("updateTime", LocalDateTime.now());
+        }
+        if (metaObject.hasSetter("createUser")) {
+            metaObject.setValue("createUser", BaseContext.getCurrentId());
+        }
+        if (metaObject.hasSetter("updateUser")) {
+            metaObject.setValue("updateUser", BaseContext.getCurrentId());
+        }
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
         log.info("公共字段自动填充[update]...");
-        metaObject.setValue("updateTime", LocalDateTime.now());
-        metaObject.setValue("updateUser", BaseContext.getCurrentId());
+        if (metaObject.hasSetter("updateTime")) {
+            metaObject.setValue("updateTime", LocalDateTime.now());
+        }
+        if (metaObject.hasSetter("updateUser")) {
+            metaObject.setValue("updateUser", BaseContext.getCurrentId());
+        }
     }
 }

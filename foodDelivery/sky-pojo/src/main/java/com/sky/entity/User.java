@@ -1,5 +1,9 @@
 package com.sky.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +20,7 @@ import java.time.LocalDateTime;
 public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     //微信用户唯一标识
@@ -38,5 +42,6 @@ public class User implements Serializable {
     private String avatar;
 
     //注册时间
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }
