@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sky.dto.SetmealDTO;
 import com.sky.dto.SetmealPageQueryDTO;
+import com.sky.entity.Dish;
 import com.sky.entity.Setmeal;
 import com.sky.entity.SetmealDish;
 import com.sky.mapper.DishMapper;
@@ -15,6 +16,7 @@ import com.sky.mapper.SetMealMapper;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.SetMealService;
+import com.sky.vo.DishItemVO;
 import com.sky.vo.SetmealVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +98,7 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
 
     /**
      * 根据id查询
+     *
      * @param id
      * @return
      */
@@ -153,6 +156,38 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
         LambdaQueryWrapper<SetmealDish> dishLambdaQueryWrapper = new LambdaQueryWrapper<>();
         dishLambdaQueryWrapper.in(SetmealDish::getSetmealId, ids);
         setMealDishMapper.delete(dishLambdaQueryWrapper);
+
+
+    }
+
+    /**
+     * 根据条件查询套餐
+     *
+     * @param setmeal
+     * @return
+     */
+    @Override
+    public List<Setmeal> getSetMealById(Setmeal setmeal) {
+        LambdaQueryWrapper<Setmeal> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(setmeal.getCategoryId() != null, Setmeal::getCategoryId, setmeal.getCategoryId());
+        wrapper.eq(setmeal.getStatus() != null, Setmeal::getStatus, setmeal.getStatus());
+        wrapper.orderByDesc(Setmeal::getUpdateTime);
+
+        List<Setmeal> list = setMealMapper.selectList(wrapper);
+        return list;
+    }
+
+    /**
+     * 根据套餐id查询包含的菜品列表
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public List<DishItemVO> getDishItemById(Long id) {
+        //查询套餐对应的菜品信息
+       return   setMealMapper.getDishItemById(id);
+
 
 
     }

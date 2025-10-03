@@ -23,4 +23,9 @@
         order by setmeal.update_time desc
 
     </select>
+    <select id="getDishItemById" resultType="com.sky.vo.DishItemVO">
+        select copies,dish.name,image,description
+        from setmeal_dish join dish on setmeal_dish.dish_id = dish.id
+        where setmeal_dish.setmeal_id = #{id};
+    </select>
 </mapper>
