@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.serializer.BeanContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sky.context.BaseContext;
@@ -17,7 +18,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.beans.beancontext.BeanContext;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -119,5 +119,13 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
         return shoppingCarts;
 
 
+    }
+
+    @Override
+    public void cleanShoppingCart() {
+        BaseContext.getCurrentId();
+        LambdaQueryWrapper<ShoppingCart> wrapper = new LambdaQueryWrapper<ShoppingCart>()
+                .eq(ShoppingCart::getUserId, BaseContext.getCurrentId());
+        shoppingCartMapper.delete(wrapper);
     }
 }
