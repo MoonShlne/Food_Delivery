@@ -42,7 +42,7 @@ public class DishController {
         log.info("新增菜品:{}", dishDTO);
         //清理redis缓存
         String key="dish_"+dishDTO.getCategoryId();
-        deleteCatch(key);
+        deleteCache(key);
 
         dishService.save(dishDTO);
         return Result.success();
@@ -63,7 +63,7 @@ public class DishController {
     @ApiOperation(value = "删除/批量删除菜品")
     public Result delete(@RequestParam List<Long> ids) {
         //清理redis缓存
-        deleteCatch("dish_*");
+        deleteCache("dish_*");
 
         log.info("删除/批量删除菜品:{}", ids);
         dishService.deleteBatch(ids);
@@ -83,7 +83,7 @@ public class DishController {
     public Result update(@RequestBody DishDTO dishDTO) {
         log.info("修改菜品:{}", dishDTO);
         //清理redis缓存
-        deleteCatch("dish_*");
+        deleteCache("dish_*");
 
         dishService.update(dishDTO);
         return Result.success();
@@ -95,7 +95,7 @@ public class DishController {
     public Result statusSwitch(@PathVariable Integer status, Long id) {
         log.info("起售/停售菜品:{}", id, status);
         //清理redis缓存
-        deleteCatch("dish_*");
+        deleteCache("dish_*");
 
         dishService.statusSwitch(status, id);
         return Result.success();
@@ -115,7 +115,7 @@ public class DishController {
      * 在菜品 增加  删除  修改  起售 停售 时
      * @param pattern
      */
-    private void deleteCatch(String pattern){
+    private void deleteCache(String pattern){
         Set<String> keys = redisTemplate.keys(pattern);
         if (keys != null) {
             redisTemplate.delete(keys);
