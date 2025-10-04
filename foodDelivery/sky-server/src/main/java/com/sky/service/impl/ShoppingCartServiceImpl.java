@@ -17,8 +17,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.beans.beancontext.BeanContext;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.util.List;
 
 /**
  * @author polar
@@ -33,6 +35,9 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
 
     @Autowired
     private DishMapper dishMapper;
+
+    @Autowired
+    private ShoppingCartMapper shoppingCartMapper;
 
     /**
      * 购物车加购
@@ -96,5 +101,23 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
                 this.save(shoppingCart);
             }
         }
+    }
+
+    /**
+     * 根据用户id查询购物车
+     *
+     * @return
+     */
+    @Override
+    public List<ShoppingCart> getShoppingCartById() {
+        Long currentId = BaseContext.getCurrentId();
+        LambdaQueryWrapper<ShoppingCart> wrapper = new LambdaQueryWrapper<ShoppingCart>()
+                .eq(ShoppingCart::getUserId, currentId)
+                .orderByAsc(ShoppingCart::getCreateTime);
+        List<ShoppingCart> shoppingCarts = shoppingCartMapper.selectList(wrapper);
+
+        return shoppingCarts;
+
+
     }
 }
