@@ -121,11 +121,66 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper, Sho
 
     }
 
+    /**
+     * 清空购物车
+     */
     @Override
     public void cleanShoppingCart() {
         BaseContext.getCurrentId();
         LambdaQueryWrapper<ShoppingCart> wrapper = new LambdaQueryWrapper<ShoppingCart>()
                 .eq(ShoppingCart::getUserId, BaseContext.getCurrentId());
         shoppingCartMapper.delete(wrapper);
+    }
+
+    /**
+     * 购物车减购
+     *
+     * @param shoppingCartDTO
+     */
+    @Override
+    public void sub(ShoppingCartDTO shoppingCartDTO) {
+        //完善购物车信息
+        ShoppingCart shoppingCart = new ShoppingCart();
+        shoppingCart.setUserId(BaseContext.getCurrentId());
+        BeanUtils.copyProperties(shoppingCartDTO, shoppingCart);
+        //先判断是套餐 还是 菜品
+        if (shoppingCart.getDishId() == null) {
+            //是套餐  再根据userid判断购物车中是否已经存在该套餐
+            LambdaQueryWrapper<ShoppingCart> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(ShoppingCart::getUserId, shoppingCart.getUserId())
+                    .eq(ShoppingCart::getSetmealId, shoppingCartDTO.getSetmealId());
+
+            ShoppingCart existingCartItem = this.getOne(wrapper);
+            if (existingCartItem != null && existingCartItem.getNumber() > 1) {
+                //如果存在，并且数量大于1，则数量减一
+                existingCartItem.setNumber(existingCartItem.getNumber() - 1);
+                this.updateById(existingCartItem);
+            } else if (existingCartItem != null && existingCartItem.getNumber() == 1) {
+                //如果数量等于1，则删除该记录
+                this.removeById(existingCartItem.getId());
+            }
+        } else {
+            //是菜品  再根据userid判断购物车中是否已经存在该菜品
+            LambdaQueryWrapper<ShoppingCart> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(ShoppingCart::getUserId, shoppingCart.getUserId())
+                    .eq(ShoppingCart::getDishId, shoppingCartDTO.getDishId());
+
+            if (shoppingCartDTO.getDishFlavor() != null) {
+                wrapper.eq(ShoppingCart::getDishFlavor, shoppingCartDTO.getDishFlavor());
+            }
+
+            ShoppingCart existingCartItem = this.getOne(wrapper);
+            if (existingCartItem != null && existingCartItem.getNumber() > 1) {
+                //如果存在，并且数量大于1，则数量减一
+                existingCartItem.setNumber(existingCartItem.getNumber() - 1);
+                this.updateById(existingCartItem);
+            } else if (existingCartItem != null && existingCartItem.getNumber() == 1) {
+                //如果数量等于1，则删除该记录
+                this.removeById(existingCartItem.getId());
+            }
+
+        }
+
+
     }
 }

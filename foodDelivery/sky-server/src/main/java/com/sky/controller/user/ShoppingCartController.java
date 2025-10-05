@@ -50,4 +50,14 @@ public class ShoppingCartController {
         shoppingCartService.cleanShoppingCart();
         return Result.success();
     }
+
+
+    @PostMapping("/sub")
+    @ApiOperation(value = "购物车减购")
+    public Result sub(@RequestBody ShoppingCartDTO shoppingCartDTO){
+        log.info("购物车减购: {}", shoppingCartDTO);
+        //完善购物车信息
+        shoppingCartService.sub(shoppingCartDTO);
+        return Result.success();
+    }
 }
