@@ -1,27 +1,26 @@
 package com.sky.service.impl;
 
 import ch.qos.logback.core.ContextBase;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
-import com.sky.entity.AddressBook;
-import com.sky.entity.OrderDetail;
-import com.sky.entity.Orders;
-import com.sky.entity.ShoppingCart;
-import com.sky.mapper.AddressBookMapper;
-import com.sky.mapper.OrderDetailMapper;
-import com.sky.mapper.OrderServiceMapper;
-import com.sky.mapper.ShoppingCartMapper;
+import com.sky.entity.*;
+import com.sky.mapper.*;
 import com.sky.service.OrderService;
 import com.sky.service.ShoppingCartService;
+import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -40,6 +39,10 @@ public class OrderServiceImpl implements OrderService {
     private ShoppingCartMapper shoppingCartMapper;
     @Autowired
     private OrderServiceMapper orderServiceMapper;
+    @Autowired
+    private UserMapper userMapper;
+
+
 
     @Transactional
     @Override
@@ -98,4 +101,24 @@ public class OrderServiceImpl implements OrderService {
 
         return orderSubmitVO;
     }
+
+    @Override
+    public void paySuccess(String orderNumber) {
+        // 根据订单号查询订单
+        LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Orders::getNumber, orderNumber);
+        Orders ordersDB = orderServiceMapper.selectOne(queryWrapper);
+
+        // 根据订单id更新订单的状态、支付方式、支付状态、结账时间
+        Orders orders = Orders.builder()
+                .id(ordersDB.getId())
+                .status(Orders.TO_BE_CONFIRMED)
+                .payStatus(Orders.PAID)
+                .checkoutTime(LocalDateTime.now())
+                .build();
+
+        orderServiceMapper.updateById(orders);
+    }
+
+
 }
