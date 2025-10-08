@@ -240,6 +240,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
                 item -> {
                     ShoppingCart shoppingCart = new ShoppingCart();
                     BeanUtils.copyProperties(item, shoppingCart);
+                    //id重新自增
+                    shoppingCart.setId(null);
                     shoppingCart.setUserId(currentId);
                     shoppingCart.setCreateTime(LocalDateTime.now());
                     shoppingCarts.add(shoppingCart);
