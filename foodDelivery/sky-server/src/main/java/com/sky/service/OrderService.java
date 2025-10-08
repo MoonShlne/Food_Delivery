@@ -1,9 +1,7 @@
 package com.sky.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.sky.dto.OrdersConfirmDTO;
-import com.sky.dto.OrdersPageQueryDTO;
-import com.sky.dto.OrdersSubmitDTO;
+import com.sky.dto.*;
 import com.sky.result.PageResult;
 import com.sky.vo.OrderOverViewVO;
 import com.sky.vo.OrderStatisticsVO;
@@ -80,4 +78,16 @@ public interface OrderService  extends IService<com.sky.entity.Orders> {
      * @param
      */
     void confirm(OrdersConfirmDTO ordersConfirmDTO);
+
+    /**
+     * 商家拒绝订单
+     * @param ordersRejectionDTO
+     */
+    void rejection(OrdersRejectionDTO ordersRejectionDTO);
+
+    /**
+     * 商家取消订单  商家已经接单了 但是不想送了
+     * @param ordersCancelDTO
+     */
+    void cancel(OrdersCancelDTO ordersCancelDTO);
 }

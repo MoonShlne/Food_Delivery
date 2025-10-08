@@ -6,9 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
-import com.sky.dto.OrdersConfirmDTO;
-import com.sky.dto.OrdersPageQueryDTO;
-import com.sky.dto.OrdersSubmitDTO;
+import com.sky.dto.*;
 import com.sky.entity.*;
 import com.sky.mapper.*;
 import com.sky.result.PageResult;
@@ -344,6 +342,64 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
                 .build();
 
         orderServiceMapper.updateById(orders);
+    }
+
+    /**
+     * 商家拒绝订单
+     *
+     * @param ordersRejectionDTO
+     */
+    @Override
+    public void rejection(OrdersRejectionDTO ordersRejectionDTO) {
+        //- 商家拒单其实就是将订单状态修改为“已取消”
+        //- 只有订单处于“待接单”状态时可以执行拒单操作
+        //- 商家拒单时需要指定拒单原因
+        //- 商家拒单时，如果用户已经完成了支付，需要为用户退款
+        Long id = ordersRejectionDTO.getId();
+        Orders ordersDB = orderServiceMapper.selectById(id);
+        if (ordersDB == null) {
+            throw new RuntimeException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        if (!ordersDB.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
+            throw new RuntimeException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.CANCELLED)
+                .cancelReason(ordersRejectionDTO.getRejectionReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+
+        orderServiceMapper.updateById(orders);
+
+    }
+
+    /**
+     * 商家取消订单  商家已经接单了 但是不想送了
+     *
+     * @param ordersCancelDTO
+     */
+    @Override
+    public void cancel(OrdersCancelDTO ordersCancelDTO) {
+        //将支付状态改为取消
+        //商家指定取消原因
+        //- 只有订单处于“已接单”状态时可以执行取消订单操作
+        Long id = ordersCancelDTO.getId();
+        Orders ordersDB = orderServiceMapper.selectById(id);
+        if (ordersDB == null) {
+            throw new RuntimeException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        if (!ordersDB.getStatus().equals(Orders.CONFIRMED)) {
+            throw new RuntimeException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.CANCELLED)
+                .cancelReason(ordersCancelDTO.getCancelReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+        orderServiceMapper.updateById(orders);
+
     }
 
 
