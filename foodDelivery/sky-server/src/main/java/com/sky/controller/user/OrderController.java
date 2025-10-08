@@ -2,10 +2,13 @@ package com.sky.controller.user;
 
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
+import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.OrderService;
+import com.sky.vo.OrderOverViewVO;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -42,4 +45,29 @@ public class OrderController {
         return Result.success();
     }
 
+
+    @GetMapping("/orderDetail/{id}")
+    @ApiOperation("根据订单id查询订单详情")
+    public Result<OrderVO> orderDetail(@PathVariable("id") Long id) {
+        log.info("根据订单id查询订单详情: {}", id);
+        OrderVO orderVO = orderService.getOrderDetailById(id);
+        return Result.success(orderVO);
+    }
+
+
+    @GetMapping("/historyOrders")
+    @ApiOperation("查询历史订单")
+    public  Result<PageResult> historyOrders(int page, int pageSize,Integer status) {
+        log.info("查询历史订单: {},{},{}", page, pageSize,status);
+        PageResult result = orderService.getHistoryOrders(page, pageSize,status);
+        return Result.success(result);
+    }
+
+    @PutMapping("/cancel/{id}")
+    @ApiOperation("取消订单")
+    public Result cancel(@PathVariable("id") Long id) {
+        log.info("取消订单: {}", id);
+        orderService.cancel(id);
+        return Result.success();
+    }
 }

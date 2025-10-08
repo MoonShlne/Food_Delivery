@@ -1,26 +1,25 @@
 package com.sky.service.impl;
 
-import ch.qos.logback.core.ContextBase;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
-import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.*;
 import com.sky.mapper.*;
+import com.sky.result.PageResult;
 import com.sky.service.OrderService;
-import com.sky.service.ShoppingCartService;
-import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,7 +28,7 @@ import java.util.List;
  * @since 2025/10/5 15:21
  */
 @Service
-public class OrderServiceImpl implements OrderService {
+public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> implements OrderService {
 
     @Autowired
     private OrderDetailMapper orderDetailMapper;
@@ -39,9 +38,6 @@ public class OrderServiceImpl implements OrderService {
     private ShoppingCartMapper shoppingCartMapper;
     @Autowired
     private OrderServiceMapper orderServiceMapper;
-    @Autowired
-    private UserMapper userMapper;
-
 
 
     @Transactional
@@ -118,6 +114,108 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderServiceMapper.updateById(orders);
+    }
+
+    @Override
+    public OrderVO getOrderDetailById(Long id) {
+        //查询订单
+        Orders orders = orderServiceMapper.selectById(id);
+        if (orders == null) {
+            throw new RuntimeException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+
+        //查询订单详情
+        LambdaQueryWrapper<OrderDetail> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OrderDetail::getOrderId, id);
+        List<OrderDetail> orderDetailList = orderDetailMapper.selectList(wrapper);
+        orderVO.setOrderDetailList(orderDetailList);
+
+        return orderVO;
+    }
+
+
+    /**
+     * 查询历史订单
+     *
+     * @param page
+     * @param pageSize
+     * @param status
+     * @return
+     */
+    @Override
+    public PageResult getHistoryOrders(int page, int pageSize, Integer status) {
+
+        Page<Orders> ordersPage = new Page<>(page, pageSize);
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Orders::getUserId, BaseContext.getCurrentId());
+        if (status != null) {
+            wrapper.eq(Orders::getStatus, status);
+        }
+        wrapper.orderByDesc(Orders::getOrderTime);
+        IPage<Orders> pageInfo = orderServiceMapper.selectPage(ordersPage, wrapper);
+
+        List<Orders> records = pageInfo.getRecords();
+        List<OrderVO> orderVOS = new ArrayList<>();
+        for (Orders record : records) {
+            OrderVO orderVO = new OrderVO();
+            BeanUtils.copyProperties(record, orderVO);
+            //查询订单详情
+            LambdaQueryWrapper<OrderDetail> wrapper1 = new LambdaQueryWrapper<>();
+            wrapper1.eq(OrderDetail::getOrderId, record.getId());
+            List<OrderDetail> orderDetailList = orderDetailMapper.selectList(wrapper1);
+            orderVO.setOrderDetailList(orderDetailList);
+            orderVOS.add(orderVO);
+        }
+        //封装分页结果
+        PageResult pageResult = new PageResult();
+        pageResult.setTotal(pageInfo.getTotal());
+        pageResult.setRecords(orderVOS);
+
+        return pageResult;
+    }
+
+    /**
+     * 取消订单
+     *
+     * @param number 订单id
+     */
+    @Override
+    public void cancel(Long number) {
+        Long userId = BaseContext.getCurrentId();
+        //将订单状态改为 6已取消  还有取消时间
+//        - 待支付和待接单状态下，用户可直接取消订单
+//                - 商家已接单状态下，用户取消订单需电话沟通商家
+//                - 派送中状态下，用户取消订单需电话沟通商家
+//                - 如果在待接单状态下取消订单，需要给用户退款
+//                - 取消订单后需要将订单状态修改为“已取消”
+        LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Orders::getUserId, userId).eq(Orders::getId, number);
+        Orders order = orderServiceMapper.selectOne(queryWrapper);
+
+        if (order == null) {
+            throw new RuntimeException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        if (order.getStatus().equals(Orders.PENDING_PAYMENT) || order.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
+            // 待支付和待接单状态下，用户可直接取消订单
+            Orders orders = Orders.builder()
+                    .id(order.getId())
+                    .status(Orders.CANCELLED)
+                    .cancelReason("用户取消")
+                    .cancelTime(LocalDateTime.now())
+                    .build();
+            orderServiceMapper.updateById(orders);
+            return;
+        } else if (order.getStatus().equals(Orders.CONFIRMED) || order.getStatus().equals(Orders.DELIVERY_IN_PROGRESS)) {
+            //商家已接单状态下，用户取消订单需电话沟通商家
+            //派送中状态下，用户取消订单需电话沟通商家
+            throw new RuntimeException(MessageConstant.ORDER_STATUS_ERROR);
+        } else {
+            //其他状态下不能取消订单
+            throw new RuntimeException(MessageConstant.ORDER_STATUS_ERROR);
+        }
     }
 
 

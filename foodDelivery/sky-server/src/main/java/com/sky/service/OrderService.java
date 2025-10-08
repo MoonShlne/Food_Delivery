@@ -1,16 +1,17 @@
 package com.sky.service;
 
-import com.sky.dto.OrdersPaymentDTO;
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.sky.dto.OrdersSubmitDTO;
-import com.sky.vo.OrderPaymentVO;
+import com.sky.result.PageResult;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
 
 /**
  * @author polar
  * @version 1.0
  * @since 2025/10/5 15:21
  */
-public interface OrderService {
+public interface OrderService  extends IService<com.sky.entity.Orders> {
     /**
      * 用户下单
      * @param ordersSubmitDTO
@@ -25,4 +26,26 @@ public interface OrderService {
      */
     void paySuccess(String orderNumber);
 
+    /**
+     * 根据订单id查询订单详情
+     * @param id
+     * @return
+     */
+    OrderVO getOrderDetailById(Long id);
+
+    /**
+     * 查询历史订单
+     *
+     * @param page
+     * @param pageSize
+     * @param status
+     * @return
+     */
+    PageResult getHistoryOrders(int page, int pageSize, Integer status);
+
+    /**
+     * 取消订单
+     * @param id
+     */
+    void cancel(Long id);
 }
