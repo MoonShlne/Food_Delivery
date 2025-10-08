@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.*;
 import com.sky.mapper.*;
@@ -244,6 +245,56 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
                 }
         );
         shoppingCartService.saveBatch(shoppingCarts);
+    }
+
+    /**
+     * 条件分页查询订单 客户端
+     *
+     * @param ordersPageQueryDTO
+     * @return
+     */
+    @Override
+    public PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
+         //先根据条件分页查询orders 数据
+        Page<Orders> ordersPage = new Page<>(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ordersPageQueryDTO.getNumber() != null, Orders::getNumber, ordersPageQueryDTO.getNumber())
+                .eq(ordersPageQueryDTO.getPhone() != null, Orders::getPhone, ordersPageQueryDTO.getPhone())
+                .eq(ordersPageQueryDTO.getStatus() != null, Orders::getStatus, ordersPageQueryDTO.getStatus())
+                .ge(ordersPageQueryDTO.getBeginTime() != null, Orders::getOrderTime, ordersPageQueryDTO.getBeginTime())
+                .le(ordersPageQueryDTO.getEndTime() != null, Orders::getOrderTime, ordersPageQueryDTO.getEndTime())
+                .eq(ordersPageQueryDTO.getUserId() != null, Orders::getUserId, ordersPageQueryDTO.getUserId())
+                .orderByDesc(Orders::getOrderTime);
+        IPage<Orders> pageInfo = orderServiceMapper.selectPage(ordersPage, wrapper);
+        //为每一个orders 封装订单物品的字符串并且封装到OrderVO中   orderVo的orderDishes封装为 菜品×数量;菜品×数量  的形式
+        List<Orders> records = pageInfo.getRecords();
+        List<OrderVO> orderOverViewVOS = new ArrayList<>();
+        for (Orders record : records) {
+            OrderVO orderVO = new OrderVO();
+            BeanUtils.copyProperties(record, orderVO);
+            //查询订单详情
+            LambdaQueryWrapper<OrderDetail> wrapper1 = new LambdaQueryWrapper<>();
+            wrapper1.eq(OrderDetail::getOrderId, record.getId());
+            List<OrderDetail> orderDetailList = orderDetailMapper.selectList(wrapper1);
+            StringBuilder orderDishes = new StringBuilder();
+            for (int i = 0; i < orderDetailList.size(); i++) {
+                OrderDetail orderDetail = orderDetailList.get(i);
+                orderDishes.append(orderDetail.getName()).append("×").append(orderDetail.getNumber());
+                if (i != orderDetailList.size() - 1) {
+                    orderDishes.append(";");
+                }
+            }
+            orderVO.setOrderDishes(orderDishes.toString());
+            orderOverViewVOS.add(orderVO);
+        }
+        //封装分页结果
+
+
+        PageResult pageResult = new PageResult();
+        pageResult.setTotal(pageInfo.getTotal());
+        pageResult.setRecords(orderOverViewVOS);
+        return pageResult;
+
     }
 
 

@@ -1,6 +1,7 @@
 package com.sky.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.result.PageResult;
 import com.sky.vo.OrderSubmitVO;
@@ -12,6 +13,7 @@ import com.sky.vo.OrderVO;
  * @since 2025/10/5 15:21
  */
 public interface OrderService  extends IService<com.sky.entity.Orders> {
+
     /**
      * 用户下单
      * @param ordersSubmitDTO
@@ -55,4 +57,11 @@ public interface OrderService  extends IService<com.sky.entity.Orders> {
      * @return
      */
     void repetition(Long id);
+
+    /**
+     * 条件分页查询订单 客户端
+     * @param ordersPageQueryDTO
+     * @return
+     */
+    PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO);
 }
