@@ -1,6 +1,7 @@
 package com.sky.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.sky.dto.OrdersConfirmDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.result.PageResult;
@@ -76,7 +77,7 @@ public interface OrderService  extends IService<com.sky.entity.Orders> {
 
     /**
      * 商家确认订单
-     * @param id
+     * @param
      */
-    void confirm(Long id);
+    void confirm(OrdersConfirmDTO ordersConfirmDTO);
 }

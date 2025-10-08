@@ -1,5 +1,6 @@
 package com.sky.controller.admin;
 
+import com.sky.dto.OrdersConfirmDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
@@ -52,8 +53,9 @@ public class OrderController {
 
     @PutMapping("/confirm")
     @ApiOperation("商家确认订单")
-    public  Result confirm(Long id){
-        orderService.confirm(id);
+    public  Result confirm(@RequestBody OrdersConfirmDTO ordersConfirmDTO){
+       log.info("商家确认订单: {}", ordersConfirmDTO);
+         orderService.confirm(ordersConfirmDTO);
         return Result.success();
     }
 

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersConfirmDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.*;
@@ -331,15 +332,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
     /**
      * 商家确认订单
      *
-     * @param id
+     * @param
      */
     @Override
-    public void confirm(Long id) {
-        //将订单状态改为 status改为 2 已接单
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+        //将订单状态改为 status改为 3 已接单
+        Long id = ordersConfirmDTO.getId();
         Orders orders = Orders.builder()
                 .id(id)
                 .status(Orders.CONFIRMED)
                 .build();
+
         orderServiceMapper.updateById(orders);
     }
 
