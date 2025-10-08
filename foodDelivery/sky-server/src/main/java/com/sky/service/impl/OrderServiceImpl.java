@@ -11,6 +11,8 @@ import com.sky.entity.*;
 import com.sky.mapper.*;
 import com.sky.result.PageResult;
 import com.sky.service.OrderService;
+import com.sky.service.ShoppingCartService;
+import com.sky.vo.OrderOverViewVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 import org.springframework.beans.BeanUtils;
@@ -38,6 +40,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
     private ShoppingCartMapper shoppingCartMapper;
     @Autowired
     private OrderServiceMapper orderServiceMapper;
+    @Autowired
+    private ShoppingCartServiceImpl shoppingCartService;
 
 
     @Transactional
@@ -216,6 +220,30 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
             //其他状态下不能取消订单
             throw new RuntimeException(MessageConstant.ORDER_STATUS_ERROR);
         }
+    }
+
+    @Override
+    public void repetition(Long id) {
+        //获取当前订单详情数据
+        LambdaQueryWrapper<OrderDetail> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OrderDetail::getOrderId, id);
+        List<OrderDetail> orderDetailList = orderDetailMapper.selectList(wrapper);
+        if (orderDetailList == null || orderDetailList.size() == 0) {
+            throw new RuntimeException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        //将订单数据加入购物车
+        Long currentId = BaseContext.getCurrentId();
+        ArrayList<ShoppingCart> shoppingCarts = new ArrayList<>();
+        orderDetailList.forEach(
+                item -> {
+                    ShoppingCart shoppingCart = new ShoppingCart();
+                    BeanUtils.copyProperties(item, shoppingCart);
+                    shoppingCart.setUserId(currentId);
+                    shoppingCart.setCreateTime(LocalDateTime.now());
+                    shoppingCarts.add(shoppingCart);
+                }
+        );
+        shoppingCartService.saveBatch(shoppingCarts);
     }
 
 

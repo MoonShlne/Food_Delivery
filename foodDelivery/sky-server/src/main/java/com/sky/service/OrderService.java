@@ -48,4 +48,11 @@ public interface OrderService  extends IService<com.sky.entity.Orders> {
      * @param id
      */
     void cancel(Long id);
+
+    /**
+     * 再来一单
+     * @param id
+     * @return
+     */
+    void repetition(Long id);
 }
