@@ -14,6 +14,7 @@ import com.sky.result.PageResult;
 import com.sky.service.OrderService;
 import com.sky.service.ShoppingCartService;
 import com.sky.vo.OrderOverViewVO;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 import org.springframework.beans.BeanUtils;
@@ -255,7 +256,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
      */
     @Override
     public PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
-         //先根据条件分页查询orders 数据
+        //先根据条件分页查询orders 数据
         Page<Orders> ordersPage = new Page<>(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
         LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ordersPageQueryDTO.getNumber() != null, Orders::getNumber, ordersPageQueryDTO.getNumber())
@@ -295,6 +296,49 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
         pageResult.setRecords(orderOverViewVOS);
         return pageResult;
 
+    }
+
+    /**
+     * 订单概览数据
+     *
+     * @return
+     */
+    @Override
+    public OrderStatisticsVO statistics() {
+        OrderStatisticsVO orderStatisticsVO = new OrderStatisticsVO();
+        //设置待接单数量
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Orders::getStatus, Orders.TO_BE_CONFIRMED);
+        Integer toBeConfirmed = orderServiceMapper.selectCount(wrapper).intValue();
+        orderStatisticsVO.setToBeConfirmed(toBeConfirmed);
+        //设置待派送数量
+        wrapper.clear();
+        wrapper.eq(Orders::getStatus, Orders.CONFIRMED);
+        Integer confirmed = orderServiceMapper.selectCount(wrapper).intValue();
+        orderStatisticsVO.setConfirmed(confirmed);
+        //设置派送中数量
+        wrapper.clear();
+        wrapper.eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS);
+        Integer deliveryInProgress = orderServiceMapper.selectCount(wrapper).intValue();
+        orderStatisticsVO.setDeliveryInProgress(deliveryInProgress);
+
+        return orderStatisticsVO;
+
+    }
+
+    /**
+     * 商家确认订单
+     *
+     * @param id
+     */
+    @Override
+    public void confirm(Long id) {
+        //将订单状态改为 status改为 2 已接单
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.CONFIRMED)
+                .build();
+        orderServiceMapper.updateById(orders);
     }
 
 
