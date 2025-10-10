@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -12,6 +13,7 @@ import com.sky.mapper.*;
 import com.sky.result.PageResult;
 import com.sky.service.OrderService;
 import com.sky.service.ShoppingCartService;
+import com.sky.service.WebSocketServer;
 import com.sky.vo.OrderOverViewVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
@@ -20,9 +22,11 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import springfox.documentation.spring.web.json.Json;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -43,6 +47,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
     private OrderServiceMapper orderServiceMapper;
     @Autowired
     private ShoppingCartServiceImpl shoppingCartService;
+    @Autowired
+    private WebSocketServer webSocketServer;
 
 
     @Transactional
@@ -117,6 +123,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
                 .payStatus(Orders.PAID)
                 .checkoutTime(LocalDateTime.now())
                 .build();
+
+
+        //通过websocket将数据推送到客户端
+        HashMap map = new HashMap<>();
+        map.put("type", 1);  // 1表示来单提醒
+        map.put("orderId", ordersDB.getId());
+        map.put("content", "订单号：" + ordersDB.getNumber() );
+
+        String jsonString = JSON.toJSONString(map);
+
+        webSocketServer.sendToAllClient(jsonString);   //群发消息
 
         orderServiceMapper.updateById(orders);
     }
