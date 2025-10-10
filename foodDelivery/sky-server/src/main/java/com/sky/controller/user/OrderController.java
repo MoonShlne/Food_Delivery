@@ -57,9 +57,9 @@ public class OrderController {
 
     @GetMapping("/historyOrders")
     @ApiOperation("查询历史订单")
-    public  Result<PageResult> historyOrders(int page, int pageSize,Integer status) {
-        log.info("查询历史订单: {},{},{}", page, pageSize,status);
-        PageResult result = orderService.getHistoryOrders(page, pageSize,status);
+    public Result<PageResult> historyOrders(int page, int pageSize, Integer status) {
+        log.info("查询历史订单: {},{},{}", page, pageSize, status);
+        PageResult result = orderService.getHistoryOrders(page, pageSize, status);
         return Result.success(result);
     }
 
@@ -74,9 +74,17 @@ public class OrderController {
 
     @PostMapping("repetition/{id}")
     @ApiOperation("再次下单")
-    public Result repetition(@PathVariable("id") Long id){
+    public Result repetition(@PathVariable("id") Long id) {
         log.info("再次下单: {}", id);
         orderService.repetition(id);
+        return Result.success();
+    }
+
+    @ApiOperation("用户催单")
+    @GetMapping("/reminder/{id}")
+    public Result reminder(@PathVariable Long id) {
+        log.info("用户催单: {}", id);
+        orderService.reminder(id);
         return Result.success();
     }
 

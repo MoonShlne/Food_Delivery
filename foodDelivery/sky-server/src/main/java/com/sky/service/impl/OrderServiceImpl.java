@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author polar
@@ -510,6 +511,36 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
             }
         }
 
+
+    }
+
+    /**
+     * 用户催单
+     *
+     * @param id
+     */
+    @Override
+    public void reminder(Long id) {
+       //查询订单，如果订单不为待支付，可以点击催单
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Orders::getId, id);
+        Orders ordersDB = orderServiceMapper.selectOne(wrapper);
+
+
+        if (ordersDB == null) {
+            throw new RuntimeException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        if (ordersDB.getStatus().equals(Orders.PENDING_PAYMENT)) {
+            throw new RuntimeException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        //封装websocket返回的json
+        HashMap map = new HashMap<>();
+        map.put("type",2);
+        map.put("orderId",ordersDB.getId());
+        map.put("content","订单号："+ordersDB.getNumber());
+        String jsonString = JSON.toJSONString(map);
+
+        webSocketServer.sendToAllClient(jsonString);
 
     }
 

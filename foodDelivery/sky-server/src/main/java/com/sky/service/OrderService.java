@@ -114,4 +114,11 @@ public interface OrderService  extends IService<com.sky.entity.Orders> {
      * 每天凌晨一点 自动把派送中的订单改为已完成
      */
     void processDeliveryOrder();
+
+    /**
+     *
+     * 用户催单
+     * @param id
+     */
+    void reminder(Long id);
 }
