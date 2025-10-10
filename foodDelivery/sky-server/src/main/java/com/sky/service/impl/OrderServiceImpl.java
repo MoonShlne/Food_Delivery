@@ -402,5 +402,99 @@ public class OrderServiceImpl extends ServiceImpl<OrderServiceMapper, Orders> im
 
     }
 
+    /**
+     * 商家派送订单
+     *
+     * @param id
+     */
+    @Override
+    public void delivery(Long id) {
+        //当订单状态为“已接单”时，商家可以执行派送操作
+        //将订单状态改为 4 派送中
+        Orders ordersDB = orderServiceMapper.selectById(id);
+        if (ordersDB == null) {
+            throw new RuntimeException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        if (!ordersDB.getStatus().equals(Orders.CONFIRMED)) {
+            throw new RuntimeException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.DELIVERY_IN_PROGRESS)
+                .build();
+        orderServiceMapper.updateById(orders);
+
+    }
+
+    /**
+     * 商家完成订单
+     *
+     * @param id
+     */
+    @Override
+    public void complete(Long id) {
+        //当订单为派送中可以以完成订单
+        //将订单状态改为 5 已完成
+        Orders ordersDB = orderServiceMapper.selectById(id);
+        if (ordersDB == null) {
+            throw new RuntimeException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        if (!ordersDB.getStatus().equals(Orders.DELIVERY_IN_PROGRESS)) {
+            throw new RuntimeException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.COMPLETED)
+                .deliveryTime(LocalDateTime.now())
+                .build();
+        orderServiceMapper.updateById(orders);
+    }
+
+    /**
+     * 定时处理超时订单
+     */
+    @Override
+    public void processTimeoutOrders() {
+        //当订单状态为待支付且创建时间超过15分钟，自动取消订单
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Orders::getStatus, Orders.PENDING_PAYMENT)
+                .le(Orders::getOrderTime, LocalDateTime.now().minusMinutes(15));
+        List<Orders> ordersList = orderServiceMapper.selectList(wrapper);
+        if (ordersList != null && ordersList.size() > 0) {
+            for (Orders orders : ordersList) {
+                Orders order = Orders.builder()
+                        .id(orders.getId())
+                        .status(Orders.CANCELLED)
+                        .cancelReason("超时未支付，系统自动取消")
+                        .cancelTime(LocalDateTime.now())
+                        .build();
+                orderServiceMapper.updateById(order);
+            }
+        }
+    }
+
+    /**
+     * 定时处理派送中订单
+     */
+    @Override
+    public void processDeliveryOrder() {
+        //每天凌晨一点 自动把派送中的订单改为已完成
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS);
+        List<Orders> ordersList = orderServiceMapper.selectList(wrapper);
+        if (ordersList != null && ordersList.size() > 0) {
+            for (Orders orders : ordersList) {
+                Orders order = Orders.builder()
+                        .id(orders.getId())
+                        .status(Orders.COMPLETED)
+                        .deliveryTime(LocalDateTime.now())
+                        .build();
+                orderServiceMapper.updateById(order);
+            }
+        }
+
+
+    }
+
 
 }

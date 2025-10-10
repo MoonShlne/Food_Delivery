@@ -90,4 +90,28 @@ public interface OrderService  extends IService<com.sky.entity.Orders> {
      * @param ordersCancelDTO
      */
     void cancel(OrdersCancelDTO ordersCancelDTO);
+
+    /**
+     * 商家派送订单
+     * @param id
+     */
+    void delivery(Long id);
+
+    /**
+     * 商家完成订单
+     * @param id
+     */
+    void complete(Long id);
+
+    /**  定是任务
+     * 订单超时自动取消
+     * @return
+     */
+    void processTimeoutOrders();
+
+    /**
+     * 定时任务
+     * 每天凌晨一点 自动把派送中的订单改为已完成
+     */
+    void processDeliveryOrder();
 }
