@@ -22,5 +22,5 @@ public interface OrderServiceMapper extends BaseMapper<Orders> {
     ArrayList<GoodsSalesDTO> salesTop10(@Param("begin") LocalDateTime localDateTime,@Param("end") LocalDateTime localDateTime1);
 
 
-    Double sumByMap(Map map);
+    Double sumByMap(@Param("map") Map map);
 }

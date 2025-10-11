@@ -1,4 +1,5 @@
 package com.sky.service.impl;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
@@ -7,12 +8,17 @@ import com.sky.mapper.OrderServiceMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.OrderService;
 import com.sky.service.ReportService;
-import com.sky.vo.OrderReportVO;
-import com.sky.vo.SalesTop10ReportVO;
-import com.sky.vo.TurnoverReportVO;
-import com.sky.vo.UserReportVO;
+import com.sky.service.WorkspaceService;
+import com.sky.vo.*;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -30,7 +36,9 @@ public class ReportServiceImpl implements ReportService {
     @Autowired
     private OrderServiceMapper orderServiceMapper;
     @Autowired
-    private UserMapper  userMapper;
+    private UserMapper userMapper;
+    @Autowired
+    private WorkspaceServiceImpl workspaceService;
 
     @Override
     public TurnoverReportVO turnoverStatistics(LocalDate begin, LocalDate end) {
@@ -159,9 +167,6 @@ public class ReportServiceImpl implements ReportService {
                 .build();
 
 
-
-
-
     }
 
     /**
@@ -169,20 +174,19 @@ public class ReportServiceImpl implements ReportService {
      *
      * @param begin 开始日期
      * @param end   结束日期
-     * @return  订单统计数据
+     * @return 订单统计数据
      * //日期，以逗号分隔，例如：2022-10-01,2022-10-02,2022-10-03
-     *     private String dateList;
-     *     //每日订单数，以逗号分隔，例如：260,210,215
-     *     private String orderCountList;
-     *     //每日有效订单数，以逗号分隔，例如：20,21,10
-     *     private String validOrderCountList;
-     *     //订单总数
-     *     private Integer totalOrderCount;
-     *     //有效订单数
-     *     private Integer validOrderCount;
-     *     //订单完成率
-     *     private Double orderCompletionRate;
-     *
+     * private String dateList;
+     * //每日订单数，以逗号分隔，例如：260,210,215
+     * private String orderCountList;
+     * //每日有效订单数，以逗号分隔，例如：20,21,10
+     * private String validOrderCountList;
+     * //订单总数
+     * private Integer totalOrderCount;
+     * //有效订单数
+     * private Integer validOrderCount;
+     * //订单完成率
+     * private Double orderCompletionRate;
      */
     @Override
     public OrderReportVO orderStatistics(LocalDate begin, LocalDate end) {
@@ -294,6 +298,74 @@ public class ReportServiceImpl implements ReportService {
                 .numberList(numberList.toString())
                 .build();
 
+
+    }
+
+    /**
+     * 导出数据报表
+     *
+     * @param response 响应对象
+     */
+    @Override
+    public void exportDate(HttpServletResponse response) {
+        //先获取营业数据    营业额，订单完成率，新增用户，有效订单数，平均客单价   以及明细每天数据
+
+        //处理时间
+        LocalDate dataBegan = LocalDate.now().minusDays(30);
+        LocalDate dataEnd = LocalDate.now().minusDays(1);
+
+        LocalDateTime began = LocalDateTime.of(dataBegan, LocalTime.MIN);
+        LocalDateTime end = LocalDateTime.of(dataEnd, LocalTime.MAX);
+
+        BusinessDataVO businessData = workspaceService.getBusinessData(began, end);
+
+
+        //通过apache poi 把数据写入到excel中
+
+        //新建输入流，获得模板文件
+        InputStream in = this.getClass().getClassLoader().getResourceAsStream("template/运营数据报表模板.xlsx");
+
+        try {
+            XSSFWorkbook excel = new XSSFWorkbook(in);
+            //填充数据   时间
+            XSSFSheet sheet = excel.getSheetAt(0);
+            sheet.getRow(1).getCell(1).setCellValue("时间：" + dataBegan + "至" + dataEnd);
+            //填充数据   运营数据
+            sheet.getRow(3).getCell(2).setCellValue(businessData.getTurnover());   //营业额
+            sheet.getRow(3).getCell(4).setCellValue(businessData.getOrderCompletionRate());   //完成率
+            sheet.getRow(3).getCell(6).setCellValue(businessData.getNewUsers()); //新增用户
+            sheet.getRow(4).getCell(2).setCellValue(businessData.getValidOrderCount()); //有效订单数
+            sheet.getRow(4).getCell(4).setCellValue(businessData.getUnitPrice()); //平均客单价
+
+            //填充数据   运营明细  数据每一天 从row 7 colum 1  到 colum 6  30天
+
+            for (int i = 0; i < 30; i++) {
+                LocalDateTime date = began.plusDays(1);
+                sheet.getRow(7 + i).getCell(1).setCellValue(date.toLocalDate().toString()); //时间
+                //获取每天的营业数据
+                BusinessDataVO dayBusinessData = workspaceService.getBusinessData(LocalDateTime.of(date.toLocalDate(), LocalTime.MIN),
+                                                                                  LocalDateTime.of(date.toLocalDate(), LocalTime.MAX));
+
+                sheet.getRow(7 + i).getCell(2).setCellValue(dayBusinessData.getTurnover()); //营业额
+                sheet.getRow(7 + i).getCell(3).setCellValue(dayBusinessData.getValidOrderCount()); //有效订单数
+                sheet.getRow(7 + i).getCell(4).setCellValue(dayBusinessData.getOrderCompletionRate()); //订单完成率
+                sheet.getRow(7 + i).getCell(5).setCellValue(dayBusinessData.getUnitPrice()); //平均客单价
+                sheet.getRow(7 + i).getCell(6).setCellValue(dayBusinessData.getNewUsers()); //新增用户
+                began = date;
+            }
+
+
+            //通过response把excel文件写回给前端
+            ServletOutputStream outputStream = response.getOutputStream();
+            excel.write(outputStream);
+
+            //关闭资源
+            outputStream.close();
+            excel.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 
     }
