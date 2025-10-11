@@ -340,7 +340,7 @@ public class ReportServiceImpl implements ReportService {
             //填充数据   运营明细  数据每一天 从row 7 colum 1  到 colum 6  30天
 
             for (int i = 0; i < 30; i++) {
-                LocalDateTime date = began.plusDays(1);
+                LocalDateTime date = began.plusDays(i);
                 sheet.getRow(7 + i).getCell(1).setCellValue(date.toLocalDate().toString()); //时间
                 //获取每天的营业数据
                 BusinessDataVO dayBusinessData = workspaceService.getBusinessData(LocalDateTime.of(date.toLocalDate(), LocalTime.MIN),
@@ -351,7 +351,7 @@ public class ReportServiceImpl implements ReportService {
                 sheet.getRow(7 + i).getCell(4).setCellValue(dayBusinessData.getOrderCompletionRate()); //订单完成率
                 sheet.getRow(7 + i).getCell(5).setCellValue(dayBusinessData.getUnitPrice()); //平均客单价
                 sheet.getRow(7 + i).getCell(6).setCellValue(dayBusinessData.getNewUsers()); //新增用户
-                began = date;
+
             }
 
 
