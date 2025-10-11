@@ -10,6 +10,7 @@ import com.sky.vo.SetmealVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author polar
@@ -21,4 +22,13 @@ public interface SetMealMapper extends BaseMapper<Setmeal> {
     IPage<SetmealVO> pageQuery(Page<Setmeal> page,@Param("dto") SetmealPageQueryDTO setmealPageQueryDTO);
 
     List<DishItemVO> getDishItemById(Long id);
+
+
+    /**
+     * 根据条件统计套餐数量
+     * @param map
+     * @return
+     */
+    Integer countByMap(Map map);
+
 }

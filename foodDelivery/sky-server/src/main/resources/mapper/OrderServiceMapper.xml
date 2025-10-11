@@ -21,4 +21,18 @@
 
 
     </select>
+    <select id="sumByMap" resultType="java.lang.Double">
+        select sum(amount) from orders
+        <where>
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+            <if test="beginTime != null and endTime != null">
+                and order_time between #{map.begin} and #{map.end}
+            </if>
+            and status = 5
+        </where>
+
+
+    </select>
 </mapper>

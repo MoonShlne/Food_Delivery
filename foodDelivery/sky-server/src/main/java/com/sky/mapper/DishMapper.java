@@ -8,6 +8,8 @@ import com.sky.result.Result;
 import com.sky.vo.DishVO;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Map;
+
 /**
  * @author polar
  * @version 1.0
@@ -17,4 +19,11 @@ public interface DishMapper extends BaseMapper<Dish> {
 
     IPage<DishVO> pageQuery(Page<DishVO> dishPage,  DishPageQueryDTO dishPageQueryDTO);
 
+
+    /**
+     * 根据条件统计菜品数量
+     * @param map
+     * @return
+     */
+    Integer countByMap(Map map);
 }

@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * @author polar
@@ -19,4 +20,7 @@ public interface OrderServiceMapper extends BaseMapper<Orders> {
     Double sumByOrderAmount(@Param("beginTime") LocalDateTime beginTime, @Param("endTime") LocalDateTime endTime);
 
     ArrayList<GoodsSalesDTO> salesTop10(@Param("begin") LocalDateTime localDateTime,@Param("end") LocalDateTime localDateTime1);
+
+
+    Double sumByMap(Map map);
 }
