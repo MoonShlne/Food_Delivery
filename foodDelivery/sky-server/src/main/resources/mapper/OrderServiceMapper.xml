@@ -10,4 +10,15 @@
         order_time between #{beginTime} and #{endTime}
 
     </select>
+    <select id="salesTop10" resultType="com.sky.dto.GoodsSalesDTO">
+        select order_detail.name as name ,sum(order_detail.number) as number
+        from orders join
+        order_detail on
+        orders.id = order_detail.order_id
+        where orders.status=5
+            and orders.order_time between #{begin} and #{end}
+        group by dish_id order by sum(order_detail.number) desc limit 10;
+
+
+    </select>
 </mapper>

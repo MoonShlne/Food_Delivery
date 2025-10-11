@@ -1,6 +1,7 @@
 package com.sky.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
 import com.sky.entity.User;
 import com.sky.mapper.OrderServiceMapper;
@@ -8,6 +9,7 @@ import com.sky.mapper.UserMapper;
 import com.sky.service.OrderService;
 import com.sky.service.ReportService;
 import com.sky.vo.OrderReportVO;
+import com.sky.vo.SalesTop10ReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -256,6 +258,44 @@ public class ReportServiceImpl implements ReportService {
                 .validOrderCount(Math.toIntExact(validOrderCount))
                 .orderCompletionRate(orderCompletionRate)
                 .build();
+
+
+    }
+
+    @Override
+    public SalesTop10ReportVO salesTop10(LocalDate begin, LocalDate end) {
+        //先获取时间
+        StringBuilder dateList = getList(begin, end);
+        //自定义mapper xml实现 查询销量前十的商品
+        ArrayList<GoodsSalesDTO> top10Items = orderServiceMapper.salesTop10(
+                begin != null ? LocalDateTime.of(begin, LocalTime.MIN) : null,
+                end != null ? LocalDateTime.of(end, LocalTime.MAX) : null
+        );
+
+
+        //把商品名称和销量拼接成字符串
+        StringBuilder nameList = new StringBuilder();
+        StringBuilder numberList = new StringBuilder();
+
+        if (top10Items != null && !top10Items.isEmpty()) {
+            for (GoodsSalesDTO item : top10Items) {
+                nameList.append(item.getName()).append(",");
+                numberList.append(item.getNumber()).append(",");
+            }
+            //去掉最后一个逗号
+            if (!nameList.isEmpty()) {
+                nameList.deleteCharAt(nameList.length() - 1);
+            }
+            if (!numberList.isEmpty()) {
+                numberList.deleteCharAt(numberList.length() - 1);
+            }
+        }
+
+        return SalesTop10ReportVO.builder()
+                .nameList(nameList.toString())
+                .numberList(numberList.toString())
+                .build();
+
 
 
     }
