@@ -50,7 +50,14 @@ public class ReportController {
         UserReportVO userReportVO = reportService.userStatistics(begin, end);
         return Result.success(userReportVO);
     }
-
+    @GetMapping("/ordersStatistics")
+    @ApiOperation(value = "订单统计")
+    public  Result<OrderReportVO> orderStatistics( @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
+                                                 @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end){
+        log.info("订单统计，begin = {}, end = {}", begin, end);
+        OrderReportVO orderReportVO = reportService.orderStatistics(begin, end);
+        return Result.success(orderReportVO);
+    }
 
 
 }

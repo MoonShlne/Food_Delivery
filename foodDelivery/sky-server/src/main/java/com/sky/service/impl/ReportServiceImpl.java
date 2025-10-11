@@ -1,11 +1,13 @@
 package com.sky.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sky.entity.Orders;
 import com.sky.entity.User;
 import com.sky.mapper.OrderServiceMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.OrderService;
 import com.sky.service.ReportService;
+import com.sky.vo.OrderReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,6 +160,102 @@ public class ReportServiceImpl implements ReportService {
 
 
 
+
+
+    }
+
+    /**
+     * 订单统计
+     *
+     * @param begin 开始日期
+     * @param end   结束日期
+     * @return  订单统计数据
+     * //日期，以逗号分隔，例如：2022-10-01,2022-10-02,2022-10-03
+     *     private String dateList;
+     *     //每日订单数，以逗号分隔，例如：260,210,215
+     *     private String orderCountList;
+     *     //每日有效订单数，以逗号分隔，例如：20,21,10
+     *     private String validOrderCountList;
+     *     //订单总数
+     *     private Integer totalOrderCount;
+     *     //有效订单数
+     *     private Integer validOrderCount;
+     *     //订单完成率
+     *     private Double orderCompletionRate;
+     *
+     */
+    @Override
+    public OrderReportVO orderStatistics(LocalDate begin, LocalDate end) {
+        //获取时间列表 x轴信息
+        StringBuilder dateList = getList(begin, end);
+
+        //每日订单数 和每日有效订单数
+        StringBuilder orderCountList = new StringBuilder();
+        StringBuilder validOrderCountList = new StringBuilder();
+        if (!dateList.isEmpty()) {
+            String[] dates = dateList.toString().split(",");
+            for (String date : dates) {
+                //每日订单数
+                LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+                wrapper.ge(Orders::getOrderTime, LocalDateTime.of(LocalDate.parse(date), LocalTime.MIN));
+                wrapper.le(Orders::getOrderTime, LocalDateTime.of(LocalDate.parse(date), LocalTime.MAX));
+
+                Long orderCount = orderServiceMapper.selectCount(wrapper);
+
+                orderCountList.append(orderCount).append(",");
+
+                wrapper.clear();
+                //每日有效订单数
+                wrapper.eq(Orders::getStatus, Orders.COMPLETED)
+                        .ge(Orders::getOrderTime, LocalDateTime.of(LocalDate.parse(date), LocalTime.MIN))
+                        .le(Orders::getOrderTime, LocalDateTime.of(LocalDate.parse(date), LocalTime.MAX));
+
+                Long validOrderCount = orderServiceMapper.selectCount(wrapper);
+
+                validOrderCountList.append(validOrderCount).append(",");
+            }
+            //去掉最后一个逗号
+            if (!orderCountList.isEmpty()) {
+                orderCountList.deleteCharAt(orderCountList.length() - 1);
+            }
+            if (!validOrderCountList.isEmpty()) {
+                validOrderCountList.deleteCharAt(validOrderCountList.length() - 1);
+            }
+        }
+
+        //订单总数
+        LambdaQueryWrapper<Orders> totalWrapper = new LambdaQueryWrapper<>();
+        if (begin != null) {
+            totalWrapper.ge(Orders::getOrderTime, LocalDateTime.of(begin, LocalTime.MIN));
+        }
+        if (end != null) {
+            totalWrapper.le(Orders::getOrderTime, LocalDateTime.of(end, LocalTime.MAX));
+        }
+//        Integer totalOrderCount = Math.toIntExact(orderServiceMapper.selectCount(totalWrapper));
+        Long totalOrderCount = orderServiceMapper.selectCount(totalWrapper);
+
+        //有效订单数
+        LambdaQueryWrapper<Orders> validWrapper = new LambdaQueryWrapper<>();
+        validWrapper.eq(Orders::getStatus, Orders.COMPLETED);
+        if (begin != null) {
+            validWrapper.ge(Orders::getOrderTime, LocalDateTime.of(begin, LocalTime.MIN));
+        }
+        if (end != null) {
+            validWrapper.le(Orders::getOrderTime, LocalDateTime.of(end, LocalTime.MAX));
+        }
+//        Integer validOrderCount = Math.toIntExact(orderServiceMapper.selectCount(validWrapper));
+        Long validOrderCount = orderServiceMapper.selectCount(validWrapper);
+        //订单完成率
+        Double orderCompletionRate = totalOrderCount == 0 ? 0.0 : (validOrderCount.doubleValue() / totalOrderCount);
+
+        return OrderReportVO.builder()
+                .dateList(dateList.toString())
+                .orderCountList(orderCountList.toString())
+                .validOrderCountList(validOrderCountList.toString())
+                .totalOrderCount(Math.toIntExact(totalOrderCount))
+                .validOrderCount(Math.toIntExact(validOrderCount))
+                .orderCompletionRate(orderCompletionRate)
+                .build();
 
 
     }
